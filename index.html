@@ -47,7 +47,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid #bdcbc3;border-ra
 </div>
 <div class="alert red">⏰ 5 jobs running out today</div>
 <div class="card"><b>💬 Messages (2)</b><div class="meta" style="margin-top:7px">• New job added for today<br>• Please prioritise jobs running out today</div></div>
-<button class="primary full" onclick="showPage('routePage')">🗺️ SORT MY ROUTE</button>
+<button class="primary full" onclick="showPage('routePage')">🗺️ SORT MY ROUTE</button><button class="outline full" style="margin-top:8px" onclick="refreshJobs()">↻ REFRESH / UPDATE JOBS</button><div id="refreshMsg" class="tiny" style="text-align:center;margin-top:6px">Pull latest allocation, flags and job changes</div>
 <div class="toolbar" style="margin-top:10px"><button class="secondary" onclick="openFilter()">⚙ FILTER JOBS</button><button class="secondary" onclick="alert('Messages: 2')">🔔 MESSAGES</button></div>
 <div id="jobList"></div>
 </section>
@@ -110,7 +110,17 @@ input,select,textarea{width:100%;padding:12px;border:1px solid #bdcbc3;border-ra
 <div id="demo1" class="demoStep active"><span class="demoNum">1</span><b>Open today's job</b><p class="meta">Tap the property you are visiting.</p><button class="primary full" onclick="demoGo(2)">OPEN PRACTICE JOB</button></div>
 <div id="demo2" class="demoStep hidden"><span class="demoNum">2</span><b>Check the job</b><p class="meta">Confirm address and expected serial.</p><div class="card"><b>Practice House</b><div class="meta">CF00 1AA · Expected S/N 19L2827513</div></div><button class="primary full" onclick="demoGo(3)">START METER READING</button></div>
 <div id="demo3" class="demoStep hidden"><span class="demoNum">3</span><b>Start Live Prof</b><p class="meta">Point the camera at the meter and hold steady. Normal live viewing stores no photograph.</p><button class="primary full" onclick="demoGo(4)">👁 START LIVE PROF</button></div>
-<div id="demo4" class="demoStep hidden"><span class="demoNum">4</span><b>Hold meter in view</b><div class="demoMeter">ELECTRICITY METER<div class="demoDisplay">00007 kWh</div><small>S/N 19L2827513</small></div><p class="meta">Prof checks meter, serial, register and individual digits.</p><button class="primary full" onclick="demoGo(5)">✓ METER IN VIEW</button></div>
+<div id="demo4" class="demoStep hidden"><span class="demoNum">4</span><b>Hold meter in view</b><div class="demoMeter">ELECTRICITY METER<div class="demoDisplay">00007 kWh</div><small>S/N 19L2827513</small></div><p class="meta">While you hold the meter in view, Live Prof checks:</p>
+<div class="card" style="background:#103d31;color:white">
+<b>LIVE PROF IS CHECKING…</b><br><br>
+✓ Meter type / model<br>
+✓ Serial number matches the job<br>
+✓ Correct register identified<br>
+✓ Reading & individual digits checked<br>
+✓ Visible safety concerns checked<br>
+✓ Possible signs of tampering checked
+</div>
+<div class="alert blue">Normal live scanning stores no photograph. If a possible safety/tampering concern is detected, MeterSnap captures an evidence image and warns the colleague.</div><button class="primary full" onclick="demoGo(5)">✓ METER IN VIEW</button></div>
 <div id="demo5" class="demoStep hidden"><span class="demoNum">5</span><b>Check Prof's result</b><div class="alert green">✓ Serial: 19L2827513<br>Register: Rate 2 – Active Import<br>Reading: <b>00007 kWh</b></div><p class="meta">You remain the final check. Correct anything that is wrong.</p><button class="primary full" onclick="demoGo(6)">CONFIRM & SUBMIT</button></div>
 <div id="demo6" class="demoStep hidden"><span class="demoNum">6</span><b>Job complete ✓</b><div class="alert green">Practice job complete.</div><p class="meta">If a read cannot be obtained, use <b>Can't get a reading</b>. MeterSnap asks only for what that reason requires.</p><button class="secondary full" onclick="startDemo()">RUN DEMO AGAIN</button><button class="primary full" onclick="endDemo()">FINISH DEMO</button></div></section>
 
@@ -175,6 +185,7 @@ function openEdit(){let j=jobs[current];eAddress.value=j.address;ePostcode.value
 function saveEdit(){let j=jobs[current];j.address=eAddress.value;j.postcode=ePostcode.value.toUpperCase();j.supplier=eSupplier.value;j.lrd=eLrd.value;j.due=eDue.value;j.serial=eSerial.value.toUpperCase();editModal.classList.add('hidden');function startDemo(){for(let i=1;i<=6;i++){let e=$('demo'+i);e.classList.add('hidden');e.classList.remove('active')}demo1.classList.remove('hidden');demo1.classList.add('active');showPage('demoPage');window.scrollTo(0,0)}
 function demoGo(n){for(let i=1;i<=6;i++){let e=$('demo'+i);e.classList.add('hidden');e.classList.remove('active')}let e=$('demo'+n);e.classList.remove('hidden');e.classList.add('active');window.scrollTo(0,0)}
 function endDemo(){showPage('morePage');window.scrollTo(0,0)}
+function refreshJobs(){refreshMsg.textContent='↻ Checking management job feed…';setTimeout(()=>{refreshMsg.textContent='✓ Jobs up to date · prototype feed';renderJobs()},700)}
 renderJobs();openJob(current)}
 let liveStream=null;
 async function startLiveProf(){try{liveStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});liveVideo.srcObject=liveStream;liveWrap.classList.remove("hidden");liveBtn.textContent="👁 PROF WATCHING";liveStatus.textContent="Point at the meter. Prof watches live frames; ordinary reads are not photographed."}catch(e){liveWrap.classList.remove("hidden");liveStatus.className="alert amber";liveStatus.textContent="Live camera unavailable. Use photo fallback.";camera.click()}}
@@ -196,5 +207,6 @@ function reportSafety(){captureEvidence();safetyModal.classList.add('hidden');su
 function startDemo(){for(let i=1;i<=6;i++){let e=$('demo'+i);e.classList.add('hidden');e.classList.remove('active')}demo1.classList.remove('hidden');demo1.classList.add('active');showPage('demoPage');window.scrollTo(0,0)}
 function demoGo(n){for(let i=1;i<=6;i++){let e=$('demo'+i);e.classList.add('hidden');e.classList.remove('active')}let e=$('demo'+n);e.classList.remove('hidden');e.classList.add('active');window.scrollTo(0,0)}
 function endDemo(){showPage('morePage');window.scrollTo(0,0)}
+function refreshJobs(){refreshMsg.textContent='↻ Checking management job feed…';setTimeout(()=>{refreshMsg.textContent='✓ Jobs up to date · prototype feed';renderJobs()},700)}
 renderJobs();
 </script></body></html>
