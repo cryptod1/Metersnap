@@ -23,6 +23,7 @@ main{padding:18px}.screen{display:none}.screen.active{display:block}.hero{backgr
 input,select,textarea{width:100%;padding:13px;border:1px solid #cfdad5;border-radius:12px;background:#fff}textarea{min-height:82px}.bigread{font-size:34px;font-weight:950;letter-spacing:.05em;background:var(--soft);padding:14px;border-radius:14px;text-align:center}.hidden{display:none!important}
 .progress{height:8px;background:#e5ece9;border-radius:99px;overflow:hidden;margin:10px 0}.progress>div{height:100%;background:var(--g);width:0}.scoregrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.scoregrid button{padding:11px;border-radius:11px;border:1px solid var(--line);background:#fff;font-weight:800}.scoregrid button.sel{background:var(--g);color:#fff}.footerNote{font-size:11px;color:#75847e;text-align:center;padding:16px 5px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body><div class="app">
 <div class="header"><div class="brand"><div class="logo">SS</div><div><div class="title">SituSnap <span style="font-weight:500;opacity:.8">| Meter</span></div><div class="sub">Controlled Training Evaluation</div></div></div></div>
@@ -47,10 +48,10 @@ input,select,textarea{width:100%;padding:13px;border:1px solid #cfdad5;border-ra
 <div class="alert blue" id="qualityMsg"><b>FIELD TOLERANCE ACTIVE</b><br>Prof uses several frames. You do not need to hold perfectly still; clear details are locked as they become reliable.</div>
 <div class="checks"><div class="check" id="c1">Meter type / model</div><div class="check" id="c2">Serial number</div><div class="check" id="c3">Correct register</div><div class="check" id="c4">Reading & digit confidence</div><div class="check" id="c5">Visible safety concerns</div><div class="check" id="c6">Possible bypass / tampering signs</div></div>
 <div class="alert blue">Prof reports only what is visible. “Nothing detected” does not certify the installation is safe.</div>
-<div class="row"><button class="btn secondary" onclick="stopCamera();showScreen('tests')">CANCEL</button><button class="btn primary" onclick="simulateProf()">METER IN VIEW</button></div>
+<div class="row"><button class="btn secondary" onclick="stopCamera();showScreen('tests')">CANCEL</button><button class="btn primary" id="scanNowBtn" onclick="scanNow()">SCAN NOW</button></div>
 <input id="photoInput" type="file" accept="image/*" class="hidden" onchange="analysePhoto(event)">
 <button class="btn ghost" style="margin-top:9px" onclick="photoInput.click()">🖼 UPLOAD METER PHOTO</button>
-<div class="meta" style="text-align:center;margin-top:8px">Prototype: recognition is simulated until the real vision model/API is connected.</div>
+<div class="meta" style="text-align:center;margin-top:8px">On-device OCR analyses real camera frames. It never invents an unreadable serial or reading. Visual safety/tamper classification remains trainer-observed until a validated vision service is connected.</div>
 </section>
 
 <section id="result" class="screen">
@@ -87,24 +88,60 @@ Display remains blank after the appropriate model-specific wake/check procedure.
 </main></div>
 <script>
 const tests=[1,2,3,4,5].map(i=>({id:i,label:`Test Meter ${i}`,expectedSerial:"PENDING"}));
-let current=0,stream=null,verdict="",concern=false;
+let current=0,stream=null,verdict="",concern=false,ocrWorker=null,ocrBusy=false,scanTimer=null,lastVision=null;
 let results=JSON.parse(localStorage.getItem("metersnap_prof_eval")||"[]");
 function showScreen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);updateCounts()}
 function updateCounts(){homeDone.textContent=results.length;homeLeft.textContent=5-results.length;prog.style.width=(results.length/5*100)+"%"}
 function openTests(){renderTests();showScreen("tests")}
 function renderTests(){testList.innerHTML="";tests.forEach((t,i)=>{let done=results.some(r=>r.testId===t.id),d=document.createElement("div");d.className="test"+(done?" done":"");d.innerHTML=`<div><b>${t.label}</b><div class="meta">${done?"Submitted":"Ready to scan"}</div></div><button class="btn ${done?"ghost":"primary"}" style="width:auto;padding:10px 13px" ${done?"disabled":""} onclick="startTest(${i})">${done?"DONE":"START"}</button>`;testList.appendChild(d)})}
 async function startTest(i){current=i;verdict="";concern=false;submitBtn.disabled=true;trainerNote.value="";concernBox.classList.add("hidden");document.querySelectorAll(".scoregrid button").forEach(b=>b.classList.remove("sel"));for(let n=1;n<=6;n++)document.getElementById("c"+n).classList.remove("on");scanLabel.textContent=`Test Meter ${i+1} of 5`;resultLabel.textContent=`Test Meter ${i+1} of 5`;showScreen("scan");await startCamera()}
-async function startCamera(){video.style.display="block";let old=document.getElementById("uploadedPreview");if(old)old.remove();try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});video.srcObject=stream;camNote.textContent="Camera live — keep the whole meter face inside the frame."}catch(e){camNote.textContent="Live camera unavailable in this browser. Prototype controls remain available."}}
-function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null}
-function analysePhoto(ev){
- const f=ev.target.files&&ev.target.files[0];if(!f)return;
- stopCamera();qualityMsg.innerHTML="<b>PHOTO LOADED</b><br>Prof is checking the clearest available detail in this image.";
- const r=new FileReader();r.onload=()=>{video.style.display="none";let old=document.getElementById("uploadedPreview");if(old)old.remove();let im=document.createElement("img");im.id="uploadedPreview";im.className="photoPreview";im.src=r.result;document.querySelector(".videoWrap").appendChild(im);simulateProf()};r.readAsDataURL(f);
+async function ensureOCR(){
+ if(ocrWorker)return ocrWorker;
+ camNote.textContent="Loading Prof text recognition…";
+ try{ocrWorker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text')camNote.textContent=`Reading meter… ${Math.round((m.progress||0)*100)}%`;}});return ocrWorker}
+ catch(e){camNote.textContent="Prof OCR could not load. Check data connection, then retry.";throw e}
 }
-function simulateProf(){
-qualityMsg.innerHTML="<b>MULTI-FRAME CHECK</b><br>Hold naturally. Prof keeps useful details from the clearest frames.";
-let labels=["Meter type / model ✓ locked","Serial number ✓ locked","Correct register ✓ locked","Reading & individual digits ✓ locked","Visible safety concerns checked","Possible bypass / tampering signs checked"];
-let n=1,t=setInterval(()=>{if(n<=6){let e=document.getElementById("c"+n);e.classList.add("on");e.textContent=labels[n-1];n++}else{clearInterval(t);qualityMsg.innerHTML="<b>ALL CHECKS COMPLETE</b><br>Please confirm the result.";setTimeout(()=>{stopCamera();model.value="Unable to confirm exact model";serial.value="";readMode.value="single";renderRegisters();showScreen("result")},220)}},360)
+async function startCamera(){
+ video.style.display="block";let old=document.getElementById("uploadedPreview");if(old)old.remove();
+ try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});video.srcObject=stream;await video.play();camNote.textContent="Camera live — fill the frame with the meter face.";qualityMsg.innerHTML="<b>LIVE PROF READY</b><br>Hold naturally. Tap SCAN NOW when the label and display are visible."}
+ catch(e){camNote.textContent="Live camera unavailable. Upload a meter photo instead."}
+}
+function stopCamera(){if(scanTimer){clearInterval(scanTimer);scanTimer=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null}
+function canvasFromVideo(){let c=document.createElement('canvas'),w=video.videoWidth||1280,h=video.videoHeight||960;c.width=w;c.height=h;c.getContext('2d').drawImage(video,0,0,w,h);return c}
+function normaliseOCR(t){return (t||'').toUpperCase().replace(/[|]/g,'I').replace(/\s+/g,' ').trim()}
+function parseMeterText(raw){
+ const t=normaliseOCR(raw), compact=t.replace(/\s/g,'');let out={raw:t,model:'',serial:'',mode:'single',register:'',reading:'',how:'',confidence:0};
+ if(/SECURE/.test(t)&&/LIBERTY\s*100/.test(t)){out.model='Secure Liberty 100';out.confidence+=45;out.how='Secure Liberty 100: for import, press 6 to display IMP R01; where a second rate is required, continue through the display sequence to IMP R02. For export, press 9 until EXP kWh is shown. Record whole kWh only; ignore digits after the decimal point. Confirm the required tariff/register before submission.'}
+ else if(/LIBERTY\s*100/.test(t)){out.model='Secure Liberty 100';out.confidence+=35;out.how='Liberty 100 identified. Confirm the front label before relying on model-specific button instructions.'}
+ const serialPatterns=[/\b(?:SR\.?\s*NO\.?|SERIAL(?:\s*NO)?|GATEWAY\s*NO)\s*[:#.-]?\s*([A-Z0-9]{7,14})\b/g,/\b(\d{2}[A-Z][A-Z0-9]{7,10})\b/g];
+ for(const re of serialPatterns){let m;while((m=re.exec(t))){let v=m[1].replace(/[^A-Z0-9]/g,'');if(v.length>=8){out.serial=v;break}}if(out.serial)break}
+ if(out.serial)out.confidence+=30;
+ if(/IMP\s*R0?1|ACTIVE\s*IMPORT|\bA\+\b/.test(t)){out.register='Active Import';out.confidence+=8}
+ if(/IMP\s*R0?2/.test(t)){out.mode='dual';out.register='Rate 2 — Active Import';out.confidence+=8}
+ if(/EXP\s*KWH|ACTIVE\s*EXPORT|\bA-\b/.test(t)){out.mode='importexport';out.register='Active Export';out.confidence+=8}
+ let nums=[...t.matchAll(/\b(\d{4,8})(?:[.,](\d{1,3}))?\s*KWH\b/g)];if(nums.length){out.reading=nums[nums.length-1][1];out.confidence+=12}
+ return out
+}
+function applyVision(out){
+ lastVision=out;model.value=out.model||'Unable to confirm exact model';serial.value=out.serial||'';readMode.value=out.mode||'single';renderRegisters();
+ if(out.mode==='single'&&out.register)document.getElementById('register').value=out.register;
+ if(out.mode==='single'&&out.reading)document.getElementById('reading').value=out.reading;
+ howTo.textContent=out.how||'Exact model not confirmed — take a closer view of the front label before giving model-specific button instructions.';
+ resultLabel.textContent=`Test Meter ${current+1} of 5 · OCR confidence ${Math.min(100,out.confidence)}%`;
+}
+async function recogniseSource(source){
+ if(ocrBusy)return;ocrBusy=true;scanNowBtn&&(scanNowBtn.disabled=true);qualityMsg.innerHTML='<b>REAL FRAME ANALYSIS</b><br>Prof is reading the label and display. This can take several seconds on a phone.';
+ try{let w=await ensureOCR(),res=await w.recognize(source),out=parseMeterText(res.data.text);applyVision(out);
+  ['c1','c2','c3','c4'].forEach((id,i)=>{let e=document.getElementById(id);if((i===0&&out.model)||(i===1&&out.serial)||(i===2&&out.register)||(i===3&&out.reading)){e.classList.add('on')}});
+  document.getElementById('c5').textContent='Visible safety concerns — manual/validated vision check';document.getElementById('c6').textContent='Bypass / tampering — manual/validated vision check';
+  stopCamera();showScreen('result');
+ }catch(e){qualityMsg.innerHTML='<b>SCAN NOT COMPLETED</b><br>Camera stays available. Try again, move closer, or upload a clear photo.';camNote.textContent='Unable to analyse this frame — try again.'}
+ finally{ocrBusy=false;if(document.getElementById('scanNowBtn'))scanNowBtn.disabled=false}
+}
+async function scanNow(){if(!stream||video.readyState<2){camNote.textContent='Camera is not ready yet.';return}await recogniseSource(canvasFromVideo())}
+function analysePhoto(ev){
+ const f=ev.target.files&&ev.target.files[0];if(!f)return;stopCamera();qualityMsg.innerHTML='<b>PHOTO LOADED</b><br>Prof is analysing the actual image.';
+ const r=new FileReader();r.onload=()=>{video.style.display='none';let old=document.getElementById('uploadedPreview');if(old)old.remove();let im=document.createElement('img');im.id='uploadedPreview';im.className='photoPreview';im.src=r.result;im.onload=()=>recogniseSource(im);document.querySelector('.videoWrap').appendChild(im)};r.readAsDataURL(f)
 }
 function digitSelect(id){
  return `<select id="${id}"><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select>`;
@@ -128,7 +165,7 @@ function captureReadingData(){
 }
 function setVerdict(btn,v){verdict=v;document.querySelectorAll(".scoregrid button").forEach(b=>b.classList.remove("sel"));btn.classList.add("sel");submitBtn.disabled=false}
 function showConcern(){concern=true;concernBox.classList.remove("hidden")}
-function restartScan(){showScreen("scan");startCamera()}
+function restartScan(){lastVision=null;showScreen("scan");startCamera()}
 function submitTest(){
  let rd=captureReadingData();
  results.push({testId:tests[current].id,testLabel:tests[current].label,expectedSerial:tests[current].expectedSerial,profModel:model.value,profSerial:serial.value,readingData:rd,concernDetected:concern,trainerVerdict:verdict,trainerNote:trainerNote.value,submittedAt:new Date().toISOString()});
@@ -136,7 +173,7 @@ function submitTest(){
  if(results.length>=5){renderSummary();showScreen("summary")}else{renderTests();showScreen("tests")}
 }
 function renderSummary(){summaryList.innerHTML="";results.sort((a,b)=>a.testId-b.testId).forEach(r=>{let d=document.createElement("div");d.className="card";d.innerHTML=`<b>${r.testLabel}</b><span class="pill" style="float:right">${r.trainerVerdict}</span><div class="meta" style="margin-top:8px">Serial read: ${r.profSerial||"Not confirmed"}<br>Reading mode: ${(r.readingData&&r.readingData.mode)||"legacy"}<br>${r.concernDetected?"Concern test triggered":"No concern event"}</div>`;summaryList.appendChild(d)})}
-function downloadResults(){let blob=new Blob([JSON.stringify({product:"SituSnap Meter Training Evaluation",version:"0.1",results},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="situsnap-meter-evaluation-results.json";a.click()}
+function downloadResults(){let blob=new Blob([JSON.stringify({product:"SituSnap Meter Training Evaluation",version:"0.3-real-ocr",results},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="situsnap-meter-evaluation-results.json";a.click()}
 function resetAll(){if(confirm("Reset all five evaluation results on this device?")){results=[];localStorage.removeItem("metersnap_prof_eval");showScreen("home")}}
 renderRegisters();updateCounts();
 </script></body></html>
