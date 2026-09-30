@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MeterSnap Prof Evaluation</title>
+<style>
+:root{--g:#0f3d31;--g2:#174f40;--ink:#12211c;--muted:#60706a;--line:#d9e2de;--soft:#f4f8f6;--ok:#edf8ef;--blue:#eef6fb}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#eef3f1;color:var(--ink)}
+button,input,select,textarea{font:inherit}.app{max-width:520px;margin:auto;min-height:100vh;background:#fff}.header{background:var(--g);color:#fff;padding:18px;position:sticky;top:0;z-index:4}
+.brand{display:flex;gap:11px;align-items:center}.logo{width:43px;height:43px;border:2px solid #fff;border-radius:12px;display:grid;place-items:center;font-weight:900}.title{font-weight:900;font-size:22px}.sub{font-size:12px;opacity:.85;text-transform:uppercase;letter-spacing:.08em}
+main{padding:18px}.screen{display:none}.screen.active{display:block}.hero{background:linear-gradient(145deg,var(--g),var(--g2));color:#fff;border-radius:20px;padding:22px;margin-bottom:16px}.hero h1{font-size:30px;line-height:1.04;margin:0 0 10px}.hero p{margin:0;opacity:.9}
+.badge{display:inline-block;margin-top:14px;padding:7px 10px;border-radius:999px;background:#ffffff1a;border:1px solid #ffffff33;font-size:12px;font-weight:800}
+.card{border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0}.meta{font-size:13px;color:var(--muted)}.row{display:flex;gap:10px}.row>*{flex:1}
+.btn{border:none;border-radius:14px;padding:14px 16px;font-weight:900;width:100%}.primary{background:var(--g);color:#fff}.secondary{background:#fff;color:var(--g);border:1px solid var(--g)}.ghost{background:var(--soft);border:1px solid var(--line)}.btn:disabled{opacity:.45}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.kpi div{background:var(--soft);border-radius:13px;padding:11px;text-align:center}.kpi b{display:block;font-size:19px}
+.test{border:1px solid var(--line);border-radius:14px;padding:13px;display:flex;align-items:center;justify-content:space-between;margin:9px 0}.test.done{background:var(--ok)}.pill{font-size:11px;font-weight:900;border-radius:999px;padding:6px 9px;background:var(--soft)}
+.videoWrap{position:relative;border-radius:18px;overflow:hidden;background:#101815;aspect-ratio:3/4}video{width:100%;height:100%;object-fit:cover}.scanframe{position:absolute;inset:11%;border:2px solid #d9ffec;border-radius:18px;box-shadow:0 0 0 999px #00160b30}
+.scanline{position:absolute;left:14%;right:14%;height:3px;background:#93efb4;animation:scan 1.8s linear infinite}@keyframes scan{0%{top:18%}50%{top:79%}100%{top:18%}}
+.cameraNote{position:absolute;left:12px;right:12px;bottom:12px;background:#06261dcc;color:#fff;padding:9px;border-radius:10px;font-size:12px}
+.checks{margin-top:12px;background:#0c2d24;color:#fff;border-radius:15px;padding:12px}.check{padding:7px 0;border-bottom:1px solid #ffffff18;opacity:.38;font-weight:800}.check:last-child{border-bottom:0}.check.on{opacity:1}.check.on:before{content:"✓ ";color:#9deaaf}
+.alert{border-radius:13px;padding:12px;margin:11px 0;font-size:13px}.blue{background:var(--blue);border:1px solid #c8dfef}.dangerbox{background:#fff0ee;border:1px solid #efc7c0;color:#5f1c16}
+.field{margin:12px 0}label{display:block;font-size:12px;font-weight:900;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;color:#42524c}
+input,select,textarea{width:100%;padding:13px;border:1px solid #cfdad5;border-radius:12px;background:#fff}textarea{min-height:82px}.bigread{font-size:34px;font-weight:950;letter-spacing:.05em;background:var(--soft);padding:14px;border-radius:14px;text-align:center}.hidden{display:none!important}
+.progress{height:8px;background:#e5ece9;border-radius:99px;overflow:hidden;margin:10px 0}.progress>div{height:100%;background:var(--g);width:0}.scoregrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.scoregrid button{padding:11px;border-radius:11px;border:1px solid var(--line);background:#fff;font-weight:800}.scoregrid button.sel{background:var(--g);color:#fff}.footerNote{font-size:11px;color:#75847e;text-align:center;padding:16px 5px}
+</style>
+</head>
+<body><div class="app">
+<div class="header"><div class="brand"><div class="logo">MS</div><div><div class="title">MeterSnap Prof</div><div class="sub">Controlled Training Evaluation</div></div></div></div>
+<main>
+<section id="home" class="screen active">
+<div class="hero"><h1>Scan.<br>Record.<br>Submit.</h1><p>A clean evaluation of Prof's live meter recognition and reading assistance.</p><span class="badge">5 TEST METERS · NO CUSTOMER DATA</span></div>
+<div class="card"><h3>Evaluation rules</h3><div class="meta">Prof attempts the meter first. The trainer then confirms, corrects or marks the result unable to verify. No address, customer name, postcode or location is required.</div></div>
+<div class="kpi"><div><b>5</b><span class="meta">meters</span></div><div><b id="homeDone">0</b><span class="meta">submitted</span></div><div><b id="homeLeft">5</b><span class="meta">remaining</span></div></div>
+<button class="btn primary" onclick="openTests()">BEGIN EVALUATION</button>
+<div class="footerNote">Normal live scanning does not store a photograph. Evidence capture is reserved for a detected safety/tampering concern.</div>
+</section>
+
+<section id="tests" class="screen">
+<h2 style="margin:0">Test meters</h2><div class="meta">Choose the physical meter you are about to scan.</div>
+<div class="progress"><div id="prog"></div></div><div id="testList"></div>
+<button class="btn secondary" onclick="showScreen('home')">BACK</button>
+</section>
+
+<section id="scan" class="screen">
+<div class="meta" id="scanLabel"></div><h2 style="margin:2px 0 12px">Live Prof</h2>
+<div class="videoWrap"><video id="video" autoplay playsinline muted></video><div class="scanframe"></div><div class="scanline"></div><div class="cameraNote" id="camNote">Point the rear camera squarely at the meter face and keep it steady.</div></div>
+<div class="checks"><div class="check" id="c1">Meter type / model</div><div class="check" id="c2">Serial number</div><div class="check" id="c3">Correct register</div><div class="check" id="c4">Reading & digit confidence</div><div class="check" id="c5">Visible safety concerns</div><div class="check" id="c6">Possible bypass / tampering signs</div></div>
+<div class="alert blue">Prof reports only what is visible. “Nothing detected” does not certify the installation is safe.</div>
+<div class="row"><button class="btn secondary" onclick="stopCamera();showScreen('tests')">CANCEL</button><button class="btn primary" onclick="simulateProf()">METER IN VIEW</button></div>
+<div class="meta" style="text-align:center;margin-top:8px">Prototype: recognition is simulated until the real vision model/API is connected.</div>
+</section>
+
+<section id="result" class="screen">
+<div class="meta" id="resultLabel"></div><h2 style="margin:2px 0 12px">Prof result</h2>
+<div class="card">
+<div class="field"><label>Meter type / model</label><input id="model" value="Unable to confirm exact model"></div>
+<div class="field"><label>Serial number Prof read</label><input id="serial" placeholder="Prof detected serial"></div>
+<div class="field"><label>Register</label><input id="register" value="Active Import"></div>
+<div class="field"><label>Digits required</label><select id="digits"><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select></div>
+<div class="field"><label>Reading</label><div class="bigread" id="readDisplay">00000</div><input id="reading" value="00000" inputmode="numeric" oninput="readDisplay.textContent=this.value||'—'"></div>
+</div>
+<div class="card"><h3>How to read this meter ▼</h3><div class="meta" id="howTo">Exact model not confirmed — take a closer view of the front label before giving model-specific button instructions.</div></div>
+<div class="card"><h3>Visible safety / tampering check</h3><div class="meta">No concern detected in prototype scan. This is not a declaration that the installation is safe.</div><button class="btn ghost" style="margin-top:10px" onclick="showConcern()">TEST CONCERN DETECTION</button></div>
+<div id="concernBox" class="alert dangerbox hidden"><b>⚠ POSSIBLE SAFETY / TAMPERING CONCERN</b><br>Prototype evidence event recorded. Do not touch or investigate the installation. Follow approved company procedure.</div>
+<div class="card"><h3>Trainer verdict</h3><div class="meta">Judge Prof's result, not the appearance of the demo.</div>
+<div class="scoregrid" style="margin-top:10px"><button onclick="setVerdict(this,'Correct')">Correct</button><button onclick="setVerdict(this,'Partly correct')">Partly correct</button><button onclick="setVerdict(this,'Incorrect')">Incorrect</button><button onclick="setVerdict(this,'Unable to verify')">Unable to verify</button></div>
+<div class="field"><label>Correction / trainer note</label><textarea id="trainerNote" placeholder="Optional: what Prof got wrong or could not confirm"></textarea></div></div>
+<div class="row"><button class="btn secondary" onclick="restartScan()">RESCAN</button><button class="btn primary" id="submitBtn" disabled onclick="submitTest()">SUBMIT</button></div>
+</section>
+
+<section id="summary" class="screen">
+<div class="hero"><h1>Evaluation complete</h1><p>Five test submissions recorded locally on this device.</p></div>
+<div id="summaryList"></div>
+<button class="btn primary" onclick="downloadResults()">EXPORT RESULTS</button><button class="btn secondary" style="margin-top:9px" onclick="resetAll()">RESET TEST</button>
+<div class="footerNote">Standalone prototype only: no server transmission. Export creates a local JSON evaluation file.</div>
+</section>
+</main></div>
+<script>
+const tests=[1,2,3,4,5].map(i=>({id:i,label:`Test Meter ${i}`,expectedSerial:"PENDING"}));
+let current=0,stream=null,verdict="",concern=false;
+let results=JSON.parse(localStorage.getItem("metersnap_prof_eval")||"[]");
+function showScreen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);updateCounts()}
+function updateCounts(){homeDone.textContent=results.length;homeLeft.textContent=5-results.length;prog.style.width=(results.length/5*100)+"%"}
+function openTests(){renderTests();showScreen("tests")}
+function renderTests(){testList.innerHTML="";tests.forEach((t,i)=>{let done=results.some(r=>r.testId===t.id),d=document.createElement("div");d.className="test"+(done?" done":"");d.innerHTML=`<div><b>${t.label}</b><div class="meta">${done?"Submitted":"Ready to scan"}</div></div><button class="btn ${done?"ghost":"primary"}" style="width:auto;padding:10px 13px" ${done?"disabled":""} onclick="startTest(${i})">${done?"DONE":"START"}</button>`;testList.appendChild(d)})}
+async function startTest(i){current=i;verdict="";concern=false;submitBtn.disabled=true;trainerNote.value="";concernBox.classList.add("hidden");document.querySelectorAll(".scoregrid button").forEach(b=>b.classList.remove("sel"));for(let n=1;n<=6;n++)document.getElementById("c"+n).classList.remove("on");scanLabel.textContent=`Test Meter ${i+1} of 5`;resultLabel.textContent=`Test Meter ${i+1} of 5`;showScreen("scan");await startCamera()}
+async function startCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});video.srcObject=stream;camNote.textContent="Camera live — keep the whole meter face inside the frame."}catch(e){camNote.textContent="Live camera unavailable in this browser. Prototype controls remain available."}}
+function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null}
+function simulateProf(){let n=1,t=setInterval(()=>{if(n<=6){document.getElementById("c"+n).classList.add("on");n++}else{clearInterval(t);setTimeout(()=>{stopCamera();model.value="Unable to confirm exact model";serial.value="";register.value="Active Import";digits.value="5";reading.value="00000";readDisplay.textContent="00000";showScreen("result")},250)}},300)}
+function setVerdict(btn,v){verdict=v;document.querySelectorAll(".scoregrid button").forEach(b=>b.classList.remove("sel"));btn.classList.add("sel");submitBtn.disabled=false}
+function showConcern(){concern=true;concernBox.classList.remove("hidden")}
+function restartScan(){showScreen("scan");startCamera()}
+function submitTest(){results.push({testId:tests[current].id,testLabel:tests[current].label,expectedSerial:tests[current].expectedSerial,profModel:model.value,profSerial:serial.value,profRegister:register.value,digitsRequired:digits.value,reading:reading.value,concernDetected:concern,trainerVerdict:verdict,trainerNote:trainerNote.value,submittedAt:new Date().toISOString()});localStorage.setItem("metersnap_prof_eval",JSON.stringify(results));if(results.length>=5){renderSummary();showScreen("summary")}else{renderTests();showScreen("tests")}}
+function renderSummary(){summaryList.innerHTML="";results.sort((a,b)=>a.testId-b.testId).forEach(r=>{let d=document.createElement("div");d.className="card";d.innerHTML=`<b>${r.testLabel}</b><span class="pill" style="float:right">${r.trainerVerdict}</span><div class="meta" style="margin-top:8px">Serial read: ${r.profSerial||"Not confirmed"}<br>Reading: ${r.reading} · ${r.digitsRequired} digits<br>${r.concernDetected?"Concern test triggered":"No concern event"}</div>`;summaryList.appendChild(d)})}
+function downloadResults(){let blob=new Blob([JSON.stringify({product:"MeterSnap Prof Evaluation",version:"0.1",results},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="metersnap-prof-evaluation-results.json";a.click()}
+function resetAll(){if(confirm("Reset all five evaluation results on this device?")){results=[];localStorage.removeItem("metersnap_prof_eval");showScreen("home")}}
+updateCounts();
+</script></body></html>
