@@ -77,8 +77,16 @@ input,select,textarea{width:100%;padding:12px;border:1px solid #bdcbc3;border-ra
 <div class="row between"><div class="title">Read meter</div><button class="secondary" onclick="showPage('detailPage')">← Job</button></div>
 <div class="card">
 <div class="label">Expected serial number</div><input id="expectedSerial" readonly>
-<button class="primary full" onclick="camera.click()">📷 SCAN METER</button><input id="camera" type="file" accept="image/*" capture="environment" hidden>
-<img id="preview" class="photo hidden" alt="Meter photo">
+<button id="liveBtn" class="primary full" onclick="startLiveProf()">👁 START LIVE PROF</button>
+<div id="liveWrap" class="hidden" style="margin-top:9px">
+<video id="liveVideo" class="photo" autoplay playsinline muted></video>
+<canvas id="evidenceCanvas" class="hidden"></canvas>
+<div id="liveStatus" class="alert blue">Point the camera at the whole meter. No photo is stored during a normal read.</div>
+<div class="row"><button class="secondary grow" onclick="meterInView()">✓ METER IN VIEW</button><button class="secondary grow" onclick="stopLiveProf()">STOP</button></div>
+<button class="outline full" onclick="flagConcern()">⚠ TEST CONCERN DETECTION</button>
+</div>
+<input id="camera" type="file" accept="image/*" capture="environment" hidden>
+<img id="preview" class="photo hidden" alt="Evidence photo">
 <div id="photoMsg"></div>
 <div class="label">Prof detected serial / reader confirmation</div><input id="detectedSerial" placeholder="Auto-filled when recognised">
 <div class="label">Register</div><select id="register"><option>Active Import</option><option>Rate 1 - Active Import</option><option>Rate 2 - Active Import</option><option>Gas index</option><option>Corrected volume</option><option>Uncorrected volume</option></select>
@@ -89,7 +97,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid #bdcbc3;border-ra
 <button class="outline full" onclick="openOverride()">✎ OVERRIDE / CORRECT DETAILS</button>
 <div id="submitResult"></div>
 </div>
-<div class="card"><div class="label">Unable to obtain reading</div><select id="noRead"><option value="">Select reason…</option><option>01 No access</option><option>02 Access Refused</option><option>03 Meter Blocked</option><option>04 Vacant</option><option>05 Meter Removed</option><option>06 Demolished</option><option>07 Insufficient Address</option><option>08 Meter Faulty</option><option>Blank Screen</option><option>Unsafe Premises</option><option>No Access-Key/Code Unavailable</option></select><button class="secondary full" onclick="recordNoRead()">Record no-read</button></div>
+<div class="card"><b>Unable to obtain a reading?</b><p class="meta">MeterSnap will ask only for the evidence required.</p><button class="secondary full" onclick="openNoRead()">CAN'T GET A READING</button></div>
 </section>
 
 <section id="messagesPage" class="page hidden"><div class="title">Messages</div><div class="card"><b>New job added for today</b><div class="meta">Check today's list and route.</div></div><div class="card"><b>Please prioritise overdue jobs</b><div class="meta">5 jobs are running out today.</div></div></section>
@@ -128,6 +136,10 @@ input,select,textarea{width:100%;padding:12px;border:1px solid #bdcbc3;border-ra
 
 <div id="flagModal" class="modal hidden"><div class="modalbox"><div class="bigicon">🔴</div><h2>Previous visit warning</h2><div id="flagText" class="alert red"></div><button class="secondary full" onclick="alert('Full safety note opened')">VIEW FULL NOTE</button><button class="primary full" onclick="flagModal.classList.add('hidden')">ACKNOWLEDGE & CONTINUE</button></div></div>
 <div id="snowModal" class="modal hidden"><div class="modalbox"><div class="bigicon">❄️</div><h2>Appointment / due today</h2><div id="snowText" class="alert blue"></div><button class="primary full" onclick="snowModal.classList.add('hidden')">OK</button></div></div>
+<div id="noReadModal" class="modal hidden"><div class="modalbox"><h2>Why can't you obtain a reading?</h2><select id="noReadReason">
+<option value="">Select reason…</option><option>01 No Access</option><option>Blank Screen</option><option>Access Disputed</option><option>Safety Risk - Abusive Occupier</option><option>Unsafe Premises</option><option>Asset Detail Discrepancy</option><option>Meter PERM/TEMP Blocked</option><option>Meter Not Found</option><option>08 Meter Faulty</option><option>04 Vacant</option><option>06 Demolished</option><option>05 Meter Removed</option><option>02 Access Refused</option><option>07 Insufficient Address</option><option>Customer Never Allowing Access</option><option>Unmanned Site</option><option>Health & Safety Risk</option>
+</select><button class="primary full" onclick="nextNoRead()">CONTINUE</button><button class="secondary full" onclick="noReadModal.classList.add('hidden')">Cancel</button></div></div>
+<div id="noReadDetailModal" class="modal hidden"><div class="modalbox"><h2 id="noReadTitle">No reading</h2><div id="noReadWords"><label>Additional details</label><textarea id="noReadNotes" placeholder="Add useful details for the next visit…"></textarea></div><div id="noReadPhoto"><div class="alert blue">📷 Photograph required</div><button class="secondary full" onclick="camera.click()">TAKE EVIDENCE PHOTO</button></div><div id="noReadPhotoDone" class="alert green hidden">✓ Evidence photo attached</div><button class="primary full" onclick="submitNoRead()">SUBMIT NO-READ</button><button class="secondary full" onclick="noReadDetailModal.classList.add('hidden')">Cancel</button></div></div>
 <div id="safetyModal" class="modal hidden"><div class="modalbox"><div class="bigicon">⚠️</div><h2>Possible safety concern</h2><p>The photograph may show a safety or tampering concern. This is a visual flag, not proof of tampering.</p><div class="alert amber"><b>Do not touch the installation if it appears unsafe.</b></div><button class="secondary full" onclick="safetyModal.classList.add('hidden')">LOOKS NORMAL / RETAKE</button><button class="danger full" onclick="reportSafety()">REPORT CONCERN</button></div></div>
 </main>
 <script>
@@ -150,13 +162,22 @@ function findRoute(kind){let q=(kind==='address'?routeAddress.value:routeSerial.
 function openFilter(){filterModal.classList.remove('hidden')}function closeFilter(){filterModal.classList.add('hidden')}
 function openEdit(){let j=jobs[current];eAddress.value=j.address;ePostcode.value=j.postcode;eSupplier.value=j.supplier;eLrd.value=j.lrd;eDue.value=j.due;eSerial.value=j.serial;editModal.classList.remove('hidden')}
 function saveEdit(){let j=jobs[current];j.address=eAddress.value;j.postcode=ePostcode.value.toUpperCase();j.supplier=eSupplier.value;j.lrd=eLrd.value;j.due=eDue.value;j.serial=eSerial.value.toUpperCase();editModal.classList.add('hidden');renderJobs();openJob(current)}
-camera.onchange=e=>{let f=e.target.files[0];if(!f)return;preview.src=URL.createObjectURL(f);preview.classList.remove('hidden');photoMsg.className='alert green';photoMsg.textContent='Photo captured. Prof checks meter identity, serial, reading and visible safety concerns silently. A safety popup appears only if something is flagged.'}
+let liveStream=null;
+async function startLiveProf(){try{liveStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});liveVideo.srcObject=liveStream;liveWrap.classList.remove("hidden");liveBtn.textContent="👁 PROF WATCHING";liveStatus.textContent="Point at the meter. Prof watches live frames; ordinary reads are not photographed."}catch(e){liveWrap.classList.remove("hidden");liveStatus.className="alert amber";liveStatus.textContent="Live camera unavailable. Use photo fallback.";camera.click()}}
+function stopLiveProf(){if(liveStream){liveStream.getTracks().forEach(t=>t.stop());liveStream=null}liveWrap.classList.add("hidden");liveBtn.textContent="👁 START LIVE PROF"}
+function meterInView(){liveStatus.className="alert green";liveStatus.textContent="Meter in view. Production Prof will auto-fill serial, register and reading here; colleague confirms before submission.";detectedSerial.focus()}
+function captureEvidence(){if(!liveStream||!liveVideo.videoWidth)return false;evidenceCanvas.width=liveVideo.videoWidth;evidenceCanvas.height=liveVideo.videoHeight;evidenceCanvas.getContext("2d").drawImage(liveVideo,0,0);preview.src=evidenceCanvas.toDataURL("image/jpeg",.9);preview.classList.remove("hidden");photoMsg.className="alert amber";photoMsg.textContent="Evidence image automatically captured because a possible concern was flagged.";return true}
+function flagConcern(){captureEvidence();safetyModal.classList.remove("hidden")}
+camera.onchange=e=>{let f=e.target.files[0];if(!f)return;preview.src=URL.createObjectURL(f);preview.classList.remove("hidden");photoMsg.className="alert amber";photoMsg.textContent="Fallback/evidence photograph captured."}
 function norm(s){return s.toUpperCase().replace(/[^A-Z0-9]/g,'')}
 function checkAndConfirm(){let exp=norm(expectedSerial.value),det=norm(detectedSerial.value),r=reading.value.trim();if(!det||!r){submitResult.className='alert amber';submitResult.textContent='Confirm the detected serial and reading first.';return}if(exp&&exp!==det){submitResult.className='alert red';submitResult.textContent='Serial does not match the job. Correct it, select the right meter, or record a meter exchange.';return}submitResult.className='alert green';submitResult.textContent='✓ Reader confirmed serial and reading · Job ready for automatic submission.';jobs[current].status='Completed'}
 function toggleHelp(){helpBox.classList.toggle('hidden')}
 function openOverride(){oSerial.value=detectedSerial.value;oReading.value=reading.value;overrideModal.classList.remove('hidden')}
 function saveOverride(){detectedSerial.value=oSerial.value.toUpperCase();reading.value=oReading.value;overrideModal.classList.add('hidden');submitResult.className='alert amber';submitResult.textContent='Manual correction saved: '+oReason.value+'. Reader confirmation still required.'}
-function recordNoRead(){if(!noRead.value)return alert('Select a no-read reason.');submitResult.className='alert amber';submitResult.textContent='No-read recorded: '+noRead.value}
-function reportSafety(){safetyModal.classList.add('hidden');submitResult.className='alert red';submitResult.textContent='Safety concern recorded for this job.'}
+let currentNoRead='';
+function openNoRead(){noReadReason.value='';noReadModal.classList.remove('hidden')}
+function nextNoRead(){currentNoRead=noReadReason.value;if(!currentNoRead)return alert('Select a reason.');noReadModal.classList.add('hidden');noReadDetailModal.classList.remove('hidden');noReadTitle.textContent=currentNoRead;noReadNotes.value='';window.evidenceReady=false;noReadPhotoDone.classList.add('hidden');let noAccess=currentNoRead==='01 No Access',refused=currentNoRead==='02 Access Refused';noReadWords.classList.toggle('hidden',noAccess);noReadPhoto.classList.toggle('hidden',refused)}
+function submitNoRead(){let noAccess=currentNoRead==='01 No Access',refused=currentNoRead==='02 Access Refused';if(!noAccess&&!noReadNotes.value.trim())return alert('Add the additional details.');if(!refused&&!window.evidenceReady)return alert('A photograph is required for this reason.');noReadDetailModal.classList.add('hidden');submitResult.className='alert amber';submitResult.textContent='No-read ready: '+currentNoRead+(refused?' · no photo required':' · evidence attached')+(noAccess?' · no additional information required':'')}
+function reportSafety(){captureEvidence();safetyModal.classList.add('hidden');submitResult.className='alert red';submitResult.textContent='Safety concern recorded with evidence image for this job.'}
 renderJobs();
 </script></body></html>
