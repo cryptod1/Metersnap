@@ -30,6 +30,10 @@ input,select,textarea{width:100%;padding:12px;border:1px solid #bdcbc3;border-ra
 .modal{position:fixed;z-index:100;inset:0;background:#0008;display:grid;place-items:center;padding:18px}.modalbox{width:min(460px,100%);background:#fff;border-radius:18px;padding:18px;max-height:88vh;overflow:auto}.modalbox h2{margin-top:0}.bigicon{text-align:center;font-size:42px}
 .flags{display:grid;grid-template-columns:1fr 1fr;gap:7px}.check{border:1px solid var(--line);padding:9px;border-radius:9px;font-size:13px;font-weight:700}.check input{width:auto;margin-right:5px}
 .sep{height:1px;background:var(--line);margin:13px 0}.reading{font-size:27px;text-align:center;letter-spacing:.08em}.tiny{font-size:11px;color:var(--muted)}
+
+.demoStep{border:2px solid var(--line);border-radius:14px;padding:13px;margin:10px 0;background:#fff}.demoStep.active{border-color:var(--green);background:var(--ok)}
+.demoNum{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--g);color:#fff;font-weight:950;margin-right:7px}
+.demoMeter{background:#f4f5f2;border:2px solid #aeb8b2;border-radius:14px;padding:16px;text-align:center;margin:12px 0}.demoDisplay{font-family:monospace;font-size:29px;letter-spacing:.08em;background:#dce4d7;border:2px inset #a8b4a2;padding:9px;margin:10px auto;max-width:240px}
 </style>
 </head>
 <body><main class="app">
@@ -101,7 +105,14 @@ input,select,textarea{width:100%;padding:12px;border:1px solid #bdcbc3;border-ra
 </section>
 
 <section id="messagesPage" class="page hidden"><div class="title">Messages</div><div class="card"><b>New job added for today</b><div class="meta">Check today's list and route.</div></div><div class="card"><b>Please prioritise overdue jobs</b><div class="meta">5 jobs are running out today.</div></div></section>
-<section id="morePage" class="page hidden"><div class="title">More</div><div class="card"><b>MeterSnap Job Manager</b><p class="meta">Prototype foundation. Job management, route sorting, previous-visit warnings, meter confirmation and silent photo safety checks.</p></div></section>
+<section id="morePage" class="page hidden"><div class="title">More</div><div class="card"><b>MeterSnap Job Manager</b><p class="meta">Job management, Live Prof, previous-visit warnings, meter confirmation and evidence only when required.</p></div><div class="card"><b>🎓 New to MeterSnap?</b><p class="meta">Try a guided example. Nothing in Demo Mode is submitted or saved.</p><button class="primary full" onclick="startDemo()">HOW TO USE METERSNAP</button></div></section>
+<section id="demoPage" class="page hidden"><div class="row between"><div><div class="title">🎓 MeterSnap Demo</div><div class="sub">Practice job · nothing submitted</div></div><button class="secondary" onclick="endDemo()">Exit</button></div><div class="alert blue">Follow the green step. This shows a normal successful meter read.</div>
+<div id="demo1" class="demoStep active"><span class="demoNum">1</span><b>Open today's job</b><p class="meta">Tap the property you are visiting.</p><button class="primary full" onclick="demoGo(2)">OPEN PRACTICE JOB</button></div>
+<div id="demo2" class="demoStep hidden"><span class="demoNum">2</span><b>Check the job</b><p class="meta">Confirm address and expected serial.</p><div class="card"><b>Practice House</b><div class="meta">CF00 1AA · Expected S/N 19L2827513</div></div><button class="primary full" onclick="demoGo(3)">START METER READING</button></div>
+<div id="demo3" class="demoStep hidden"><span class="demoNum">3</span><b>Start Live Prof</b><p class="meta">Point the camera at the meter and hold steady. Normal live viewing stores no photograph.</p><button class="primary full" onclick="demoGo(4)">👁 START LIVE PROF</button></div>
+<div id="demo4" class="demoStep hidden"><span class="demoNum">4</span><b>Hold meter in view</b><div class="demoMeter">ELECTRICITY METER<div class="demoDisplay">00007 kWh</div><small>S/N 19L2827513</small></div><p class="meta">Prof checks meter, serial, register and individual digits.</p><button class="primary full" onclick="demoGo(5)">✓ METER IN VIEW</button></div>
+<div id="demo5" class="demoStep hidden"><span class="demoNum">5</span><b>Check Prof's result</b><div class="alert green">✓ Serial: 19L2827513<br>Register: Rate 2 – Active Import<br>Reading: <b>00007 kWh</b></div><p class="meta">You remain the final check. Correct anything that is wrong.</p><button class="primary full" onclick="demoGo(6)">CONFIRM & SUBMIT</button></div>
+<div id="demo6" class="demoStep hidden"><span class="demoNum">6</span><b>Job complete ✓</b><div class="alert green">Practice job complete.</div><p class="meta">If a read cannot be obtained, use <b>Can't get a reading</b>. MeterSnap asks only for what that reason requires.</p><button class="secondary full" onclick="startDemo()">RUN DEMO AGAIN</button><button class="primary full" onclick="endDemo()">FINISH DEMO</button></div></section>
 
 <nav class="nav">
 <button data-page="jobsPage" class="active" onclick="showPage('jobsPage')"><span>📋</span>Jobs</button>
@@ -161,7 +172,10 @@ function sortJobs(k){if(k==='postcode')jobs.sort((a,b)=>a.postcode.localeCompare
 function findRoute(kind){let q=(kind==='address'?routeAddress.value:routeSerial.value).trim().toUpperCase();if(!q)return;let i=jobs.findIndex(j=>kind==='address'?(j.address+' '+j.postcode).toUpperCase().includes(q):(j.serial||'').toUpperCase().includes(q));if(i>=0)openJob(i);else alert('No matching job found.')}
 function openFilter(){filterModal.classList.remove('hidden')}function closeFilter(){filterModal.classList.add('hidden')}
 function openEdit(){let j=jobs[current];eAddress.value=j.address;ePostcode.value=j.postcode;eSupplier.value=j.supplier;eLrd.value=j.lrd;eDue.value=j.due;eSerial.value=j.serial;editModal.classList.remove('hidden')}
-function saveEdit(){let j=jobs[current];j.address=eAddress.value;j.postcode=ePostcode.value.toUpperCase();j.supplier=eSupplier.value;j.lrd=eLrd.value;j.due=eDue.value;j.serial=eSerial.value.toUpperCase();editModal.classList.add('hidden');renderJobs();openJob(current)}
+function saveEdit(){let j=jobs[current];j.address=eAddress.value;j.postcode=ePostcode.value.toUpperCase();j.supplier=eSupplier.value;j.lrd=eLrd.value;j.due=eDue.value;j.serial=eSerial.value.toUpperCase();editModal.classList.add('hidden');function startDemo(){for(let i=1;i<=6;i++){let e=$('demo'+i);e.classList.add('hidden');e.classList.remove('active')}demo1.classList.remove('hidden');demo1.classList.add('active');showPage('demoPage');window.scrollTo(0,0)}
+function demoGo(n){for(let i=1;i<=6;i++){let e=$('demo'+i);e.classList.add('hidden');e.classList.remove('active')}let e=$('demo'+n);e.classList.remove('hidden');e.classList.add('active');window.scrollTo(0,0)}
+function endDemo(){showPage('morePage');window.scrollTo(0,0)}
+renderJobs();openJob(current)}
 let liveStream=null;
 async function startLiveProf(){try{liveStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});liveVideo.srcObject=liveStream;liveWrap.classList.remove("hidden");liveBtn.textContent="👁 PROF WATCHING";liveStatus.textContent="Point at the meter. Prof watches live frames; ordinary reads are not photographed."}catch(e){liveWrap.classList.remove("hidden");liveStatus.className="alert amber";liveStatus.textContent="Live camera unavailable. Use photo fallback.";camera.click()}}
 function stopLiveProf(){if(liveStream){liveStream.getTracks().forEach(t=>t.stop());liveStream=null}liveWrap.classList.add("hidden");liveBtn.textContent="👁 START LIVE PROF"}
@@ -179,5 +193,8 @@ function openNoRead(){noReadReason.value='';noReadModal.classList.remove('hidden
 function nextNoRead(){currentNoRead=noReadReason.value;if(!currentNoRead)return alert('Select a reason.');noReadModal.classList.add('hidden');noReadDetailModal.classList.remove('hidden');noReadTitle.textContent=currentNoRead;noReadNotes.value='';window.evidenceReady=false;noReadPhotoDone.classList.add('hidden');let noAccess=currentNoRead==='01 No Access',refused=currentNoRead==='02 Access Refused';noReadWords.classList.toggle('hidden',noAccess);noReadPhoto.classList.toggle('hidden',refused)}
 function submitNoRead(){let noAccess=currentNoRead==='01 No Access',refused=currentNoRead==='02 Access Refused';if(!noAccess&&!noReadNotes.value.trim())return alert('Add the additional details.');if(!refused&&!window.evidenceReady)return alert('A photograph is required for this reason.');noReadDetailModal.classList.add('hidden');submitResult.className='alert amber';submitResult.textContent='No-read ready: '+currentNoRead+(refused?' · no photo required':' · evidence attached')+(noAccess?' · no additional information required':'')}
 function reportSafety(){captureEvidence();safetyModal.classList.add('hidden');submitResult.className='alert red';submitResult.textContent='Safety concern recorded with evidence image for this job.'}
+function startDemo(){for(let i=1;i<=6;i++){let e=$('demo'+i);e.classList.add('hidden');e.classList.remove('active')}demo1.classList.remove('hidden');demo1.classList.add('active');showPage('demoPage');window.scrollTo(0,0)}
+function demoGo(n){for(let i=1;i<=6;i++){let e=$('demo'+i);e.classList.add('hidden');e.classList.remove('active')}let e=$('demo'+n);e.classList.remove('hidden');e.classList.add('active');window.scrollTo(0,0)}
+function endDemo(){showPage('morePage');window.scrollTo(0,0)}
 renderJobs();
 </script></body></html>
