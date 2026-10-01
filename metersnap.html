@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MeterSnap Prof + Evidence Passport 0.13</title>
+<title>MeterSnap Prof + Evidence Passport 0.14</title>
 <style>
 :root{--g:#0f3d31;--g2:#174f40;--ink:#12211c;--muted:#60706a;--line:#d9e2de;--soft:#f4f8f6;--ok:#edf8ef;--blue:#eef6fb}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#eef3f1;color:var(--ink)}
@@ -14,7 +14,7 @@ main{padding:18px}.screen{display:none}.screen.active{display:block}.hero{backgr
 .btn{border:none;border-radius:14px;padding:14px 16px;font-weight:900;width:100%}.primary{background:var(--g);color:#fff}.secondary{background:#fff;color:var(--g);border:1px solid var(--g)}.ghost{background:var(--soft);border:1px solid var(--line)}.btn:disabled{opacity:.45}
 .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.kpi div{background:var(--soft);border-radius:13px;padding:11px;text-align:center}.kpi b{display:block;font-size:19px}
 .test{border:1px solid var(--line);border-radius:14px;padding:13px;display:flex;align-items:center;justify-content:space-between;margin:9px 0}.test.done{background:var(--ok)}.pill{font-size:11px;font-weight:900;border-radius:999px;padding:6px 9px;background:var(--soft)}
-.videoWrap{position:relative;border-radius:18px;overflow:hidden;background:#101815;aspect-ratio:3/4}video{width:100%;height:100%;object-fit:cover}.scanframe{position:absolute;inset:11%;border:2px solid #d9ffec;border-radius:18px;box-shadow:0 0 0 999px #00160b30}
+.videoWrap{position:relative;border-radius:18px;overflow:hidden;background:#101815;aspect-ratio:3/4}video,.photoPreview{width:100%;height:100%;object-fit:cover}.photoPreview{display:none}.scanframe{position:absolute;inset:11%;border:2px solid #d9ffec;border-radius:18px;box-shadow:0 0 0 999px #00160b30}
 .scanline{position:absolute;left:14%;right:14%;height:3px;background:#93efb4;animation:scan 1.8s linear infinite}@keyframes scan{0%{top:18%}50%{top:79%}100%{top:18%}}
 .cameraNote{position:absolute;left:12px;right:12px;bottom:12px;background:#06261dcc;color:#fff;padding:9px;border-radius:10px;font-size:12px}
 .checks{margin-top:12px;background:#0c2d24;color:#fff;border-radius:15px;padding:12px}.check{padding:7px 0;border-bottom:1px solid #ffffff18;opacity:.38;font-weight:800}.check:last-child{border-bottom:0}.check.on{opacity:1}.check.on:before{content:"✓ ";color:#9deaaf}
@@ -25,7 +25,7 @@ input,select,textarea{width:100%;padding:13px;border:1px solid #cfdad5;border-ra
 </style>
 </head>
 <body><div class="app">
-<div class="header"><div class="brand"><div class="logo">MS</div><div><div class="title">MeterSnap Prof</div><div class="sub">Prof Evaluation · Evidence Passport 0.13</div></div></div></div>
+<div class="header"><div class="brand"><div class="logo">MS</div><div><div class="title">MeterSnap Prof</div><div class="sub">Prof Evaluation · Evidence Passport 0.14</div></div></div></div>
 <main>
 <section id="home" class="screen active">
 <div class="hero"><h1>Scan.<br>Record.<br>Submit.</h1><p>A clean evaluation of Prof's live meter recognition and reading assistance.</p><span class="badge">5 TEST METERS · NO CUSTOMER DATA</span></div>
@@ -45,10 +45,13 @@ input,select,textarea{width:100%;padding:13px;border:1px solid #cfdad5;border-ra
 
 <section id="scan" class="screen">
 <div class="meta" id="scanLabel"></div><h2 style="margin:2px 0 12px">Live Prof</h2>
-<div class="videoWrap"><video id="video" autoplay playsinline muted></video><div class="scanframe"></div><div class="scanline"></div><div class="cameraNote" id="camNote">Keep as much of the meter face and label in view as practical. Prof must tolerate glare, darkness, dirt, awkward angles and shaky hands.</div></div>
+<div class="videoWrap"><video id="video" autoplay playsinline muted></video><img id="photoPreview" class="photoPreview" alt="Selected meter photo"><div class="scanframe"></div><div class="scanline"></div><div class="cameraNote" id="camNote">Keep as much of the meter face and label in view as practical. Prof must tolerate glare, darkness, dirt, awkward angles and shaky hands.</div></div>
 <div class="checks"><div class="check" id="c1">Meter type / model</div><div class="check" id="c2">Serial number</div><div class="check" id="c3">Correct register</div><div class="check" id="c4">Reading & digit confidence</div><div class="check" id="c5">Visible safety concerns</div><div class="check" id="c6">Possible bypass / tampering signs</div></div>
 <div class="alert blue">Prof reports only what is visible. “Nothing detected” does not certify the installation is safe.</div>
 <div class="row"><button class="btn secondary" onclick="stopCamera();showScreen('tests')">CANCEL</button><button class="btn primary" onclick="simulateProf()">METER IN VIEW</button></div>
+<input id="photoInput" class="hidden" type="file" accept="image/*" onchange="useMeterPhoto(event)">
+<button class="btn ghost" style="margin-top:9px" onclick="photoInput.click()">CHOOSE METER PHOTO</button>
+<div class="meta" id="photoNote" style="text-align:center;margin-top:7px">Use an existing meter photo from this phone when live camera scanning is impractical.</div>
 <div class="meta" style="text-align:center;margin-top:8px">Prototype: recognition is simulated until the real vision model/API is connected. Production Prof should use multi-frame confidence, never invent an unreadable digit, and offer photo upload as a fallback.</div>
 </section>
 
@@ -145,9 +148,27 @@ function showScreen(id){document.querySelectorAll(".screen").forEach(x=>x.classL
 function updateCounts(){homeDone.textContent=results.length;homeLeft.textContent=5-results.length;prog.style.width=(results.length/5*100)+"%"}
 function openTests(){renderTests();showScreen("tests")}
 function renderTests(){testList.innerHTML="";tests.forEach((t,i)=>{let done=results.some(r=>r.testId===t.id),d=document.createElement("div");d.className="test"+(done?" done":"");d.innerHTML=`<div><b>${t.label}</b><div class="meta">${done?"Submitted":"Ready to scan"}</div></div><button class="btn ${done?"ghost":"primary"}" style="width:auto;padding:10px 13px" ${done?"disabled":""} onclick="startTest(${i})">${done?"DONE":"START"}</button>`;testList.appendChild(d)})}
-async function startTest(i){current=i;verdict="";concern=false;submitBtn.disabled=true;trainerNote.value="";concernBox.classList.add("hidden");document.querySelectorAll(".scoregrid button").forEach(b=>b.classList.remove("sel"));for(let n=1;n<=6;n++)document.getElementById("c"+n).classList.remove("on");scanLabel.textContent=`Test Meter ${i+1} of 5`;resultLabel.textContent=`Test Meter ${i+1} of 5`;showScreen("scan");await startCamera()}
+async function startTest(i){clearMeterPhoto();current=i;verdict="";concern=false;submitBtn.disabled=true;trainerNote.value="";concernBox.classList.add("hidden");document.querySelectorAll(".scoregrid button").forEach(b=>b.classList.remove("sel"));for(let n=1;n<=6;n++)document.getElementById("c"+n).classList.remove("on");scanLabel.textContent=`Test Meter ${i+1} of 5`;resultLabel.textContent=`Test Meter ${i+1} of 5`;showScreen("scan");await startCamera()}
 async function startCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});video.srcObject=stream;camNote.textContent="Camera live — keep the whole meter face inside the frame."}catch(e){camNote.textContent="Live camera unavailable in this browser. Prototype controls remain available."}}
 function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null}
+
+function clearMeterPhoto(){
+  const p=document.getElementById("photoPreview"),v=document.getElementById("video"),f=document.getElementById("photoInput"),n=document.getElementById("photoNote");
+  if(p){if(p.dataset.url)URL.revokeObjectURL(p.dataset.url);p.removeAttribute("src");p.dataset.url="";p.style.display="none"}
+  if(v)v.style.display="block";
+  if(f)f.value="";
+  if(n)n.textContent="Use an existing meter photo from this phone when live camera scanning is impractical.";
+}
+function useMeterPhoto(event){
+  const file=event.target.files&&event.target.files[0];
+  if(!file)return;
+  stopCamera();
+  const p=document.getElementById("photoPreview"),v=document.getElementById("video"),n=document.getElementById("photoNote");
+  if(p.dataset.url)URL.revokeObjectURL(p.dataset.url);
+  const url=URL.createObjectURL(file);p.dataset.url=url;p.src=url;p.style.display="block";v.style.display="none";
+  camNote.textContent="Meter photo selected — keep the meter face and label visible inside the frame.";
+  n.textContent="Photo loaded locally for this test. Prototype recognition remains simulated.";
+}
 function simulateProf(){let n=1,t=setInterval(()=>{if(n<=6){document.getElementById("c"+n).classList.add("on");n++}else{clearInterval(t);setTimeout(()=>{stopCamera();model.value="Unable to confirm exact model";serial.value="";register.value="Active Import";digits.value="5";reading.value="00000";readDisplay.textContent="00000";showScreen("result")},250)}},300)}
 function setVerdict(btn,v){verdict=v;document.querySelectorAll(".scoregrid button").forEach(b=>b.classList.remove("sel"));btn.classList.add("sel");submitBtn.disabled=false}
 function showConcern(){concern=true;concernBox.classList.remove("hidden")}
@@ -160,7 +181,7 @@ updateCounts();
 
 function exportPassport(){
   const ids=["epFuel","epAssetId","epMsn","epModel","epReading","epCutout","epPhase","epIncoming","epTails","epIsolator","epEarthing","epConsumerUnit","epLct","epFuture","epCustomerConcern","epColleagueConcern","epProfConcern","epCondition","epStatus","epNotes"];
-  const evidence={product:"MeterSnap Evidence Passport",version:"0.13",createdAt:new Date().toISOString(),principle:"Evidence is not certification",data:{}};
+  const evidence={product:"MeterSnap Evidence Passport",version:"0.14",createdAt:new Date().toISOString(),principle:"Evidence is not certification",data:{}};
   ids.forEach(id=>{const el=document.getElementById(id);evidence.data[id]=el?el.value:""});
   const blob=new Blob([JSON.stringify(evidence,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="metersnap-evidence-passport.json";a.click();
