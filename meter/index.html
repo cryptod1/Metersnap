@@ -50,6 +50,7 @@ input,select,textarea{width:100%;padding:13px;border:1px solid #cfdad5;border-ra
 <div class="row"><button class="btn secondary" onclick="stopCamera();showScreen('tests')">CANCEL</button><button class="btn primary" id="scanNowBtn" onclick="scanNow()">SCAN NOW</button></div>
 <input id="photoInput" type="file" accept="image/*" class="hidden" onchange="analysePhoto(event)">
 <button class="btn ghost" style="margin-top:9px" onclick="photoInput.click()">🖼 UPLOAD METER PHOTO</button>
+<div id="degradedBox" class="alert" style="display:none;margin-top:9px"><b>PROF SERVICE UNAVAILABLE — WORK CAN CONTINUE</b><br>The meter image can be queued on this device for later Prof analysis. You can also continue with a manual reading now.<div class="row" style="margin-top:10px"><button class="btn secondary" onclick="continueManual()">CONTINUE MANUALLY</button><button class="btn primary" onclick="retryLastScan()">RETRY PROF</button></div><div class="meta" id="queueNote" style="margin-top:8px"></div></div>
 <div class="meta" style="text-align:center;margin-top:8px">Prof sends one selected camera frame to the protected vision service. The API key is never stored in this page. Uncertain values remain unconfirmed rather than being invented.</div>
 </section>
 
@@ -90,6 +91,7 @@ const tests=[1,2,3,4,5].map(i=>({id:i,label:`Test Meter ${i}`,expectedSerial:"PE
 let current=0,stream=null,verdict="",concern=false,scanBusy=false,lastVision=null;
 const PROF_API="https://situsnap-prof.stopjunkmail35.workers.dev/analyse";
 let results=JSON.parse(localStorage.getItem("metersnap_prof_eval")||"[]");
+let lastScanSource=null, lastScanError="";
 
 function showScreen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);updateCounts()}
 function updateCounts(){homeDone.textContent=results.length;homeLeft.textContent=5-results.length;prog.style.width=(results.length/5*100)+"%"}
@@ -153,7 +155,9 @@ function applyVision(out){
  }
 }
 async function recogniseSource(source){
- if(scanBusy)return;scanBusy=true;scanNowBtn.disabled=true;
+ if(scanBusy)return;
+ lastScanSource=source;
+ let db=document.getElementById("degradedBox"); if(db)db.style.display="none";scanBusy=true;scanNowBtn.disabled=true;
  qualityMsg.innerHTML="<b>PROF VISION</b><br>Analysing the actual meter image…";
  try{
    let resp=await fetch(PROF_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:toJPEG(source),test_meter:current+1})});
@@ -162,10 +166,38 @@ async function recogniseSource(source){
    applyVision(data);
    stopCamera();showScreen("result");
  }catch(e){
-   qualityMsg.innerHTML="<b>SCAN NOT COMPLETED</b><br>"+String(e.message||e)+". Camera remains available — retry or upload a clear photo.";
-   camNote.textContent="Prof service unavailable or unable to analyse this frame.";
+   lastScanError=String(e.message||e);
+   qualityMsg.innerHTML="<b>PROF TEMPORARILY UNAVAILABLE</b><br>"+lastScanError+". This does not block the meter visit.";
+   camNote.textContent="Camera remains available. Retry Prof or continue manually.";
+   let db=document.getElementById("degradedBox"); if(db)db.style.display="block";
+   queueLastFrame().catch(()=>{});
  }finally{scanBusy=false;scanNowBtn.disabled=false}
 }
+
+function sourceDataURL(source){
+ const c=document.createElement("canvas"),max=1280,scale=Math.min(1,max/(source.videoWidth||source.naturalWidth||source.width||max));
+ c.width=Math.round((source.videoWidth||source.naturalWidth||source.width)*scale);c.height=Math.round((source.videoHeight||source.naturalHeight||source.height)*scale);
+ c.getContext("2d").drawImage(source,0,0,c.width,c.height);return c.toDataURL("image/jpeg",.72);
+}
+async function queueLastFrame(){
+ if(!lastScanSource)return;
+ try{
+  const q=JSON.parse(localStorage.getItem("situsnap_prof_pending")||"[]");
+  q.push({id:Date.now(),test_meter:current+1,image:sourceDataURL(lastScanSource),error:lastScanError,queuedAt:new Date().toISOString()});
+  while(q.length>5)q.shift(); localStorage.setItem("situsnap_prof_pending",JSON.stringify(q));
+  const n=document.getElementById("queueNote");if(n)n.textContent=`Saved locally for retry · ${q.length} pending on this device.`;
+ }catch(e){const n=document.getElementById("queueNote");if(n)n.textContent="Could not retain the image locally — manual reading remains available."}
+}
+function retryLastScan(){if(lastScanSource)recogniseSource(lastScanSource)}
+function continueManual(){
+ stopCamera(); lastVision=null;
+ model.value="Prof unavailable — manual entry"; serial.value=""; readMode.value="single"; renderRegisters();
+ resultLabel.textContent=`Test Meter ${current+1} of 5 · DEGRADATION MODE`;
+ howTo.textContent="Prof is unavailable. Follow approved company meter-reading procedure and enter only values you can confirm. The job must not be blocked by the AI service.";
+ concern=false; concernBox.classList.remove("hidden"); concernBox.innerHTML="<b>OFFLINE / SERVICE DEGRADATION</b><br>Prof did not inspect this meter. No AI safety, tamper or bypass assessment has been made.";
+ showScreen("result");
+}
+
 async function scanNow(){if(!stream||video.readyState<2){camNote.textContent="Camera is not ready yet.";return}await recogniseSource(canvasFromVideo())}
 function analysePhoto(ev){
  const f=ev.target.files&&ev.target.files[0];if(!f)return;
@@ -202,7 +234,7 @@ function submitTest(){
  if(results.length>=5){renderSummary();showScreen("summary")}else{renderTests();showScreen("tests")}
 }
 function renderSummary(){summaryList.innerHTML="";results.sort((a,b)=>a.testId-b.testId).forEach(r=>{let d=document.createElement("div");d.className="card";d.innerHTML=`<b>${r.testLabel}</b><span class="pill" style="float:right">${r.trainerVerdict}</span><div class="meta" style="margin-top:8px">Serial read: ${r.profSerial||"Not confirmed"}<br>Reading mode: ${(r.readingData&&r.readingData.mode)||"legacy"}<br>${r.concernDetected?"Concern test triggered":"No concern event"}</div>`;summaryList.appendChild(d)})}
-function downloadResults(){let blob=new Blob([JSON.stringify({product:"SituSnap Meter Training Evaluation",version:"0.4-prof-vision",results},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="situsnap-meter-evaluation-results.json";a.click()}
+function downloadResults(){let blob=new Blob([JSON.stringify({product:"SituSnap Meter Training Evaluation",version:"0.5-battle-hardy",results},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="situsnap-meter-evaluation-results.json";a.click()}
 function resetAll(){if(confirm("Reset all five evaluation results on this device?")){results=[];localStorage.removeItem("metersnap_prof_eval");showScreen("home")}}
 renderRegisters();updateCounts();
 </script></body></html>
