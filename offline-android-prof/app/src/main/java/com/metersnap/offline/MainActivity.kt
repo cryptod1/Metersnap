@@ -330,8 +330,7 @@ class MainActivity : ComponentActivity() {
         stopSweepButton.visibility = View.GONE
         val stable = observedLines.entries.filter { it.value >= 2 }.sortedByDescending { it.value }.map { it.key }
         val found = if (stable.isNotEmpty()) stable else observedLines.keys.toList()
-        diagnosticText.text = if (found.isEmpty()) "No readable text found in the sampled frames." else found.joinToString("
-")
+        diagnosticText.text = if (found.isEmpty()) "No readable text found in the sampled frames." else found.joinToString("\n")
         showFields(if (found.isEmpty()) "No text confirmed. Enter details manually or mark what cannot be confirmed." else "Sweep complete. Check the meter details below; nothing has been submitted automatically.")
     }
 
