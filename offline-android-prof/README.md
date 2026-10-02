@@ -1,19 +1,33 @@
-# MeterSnap Offline Prof — Android OCR test build
+# MeterSnap Offline Prof — three-meter field trial
 
-This is a separate native Android test app for the next MeterSnap milestone. It takes a full-size photo with the phone's camera app or opens a saved image, then runs bundled Latin text recognition locally on the device.
+This Android proof build adds a live, slow camera sweep. CameraX supplies preview frames to on-device Latin text recognition; the app does not encode or save a video and has no network permission. A still-photo picker remains available when the live camera cannot be used.
 
-## What this build proves
+## Trial record
 
-- Camera capture and saved-photo selection feed one bounded scan.
-- OCR is bundled into the APK, so it is available offline after installation.
-- The app has no `INTERNET` permission and makes no cloud or API calls.
-- A scan stops after 20 seconds and reports a recoverable error instead of spinning forever.
-- OCR output is shown as unverified text; the colleague must confirm it.
+Each of the first three meter checks captures only work fields:
 
-## What it does not claim
+- Manufacturer and model: manufacturer selection controls the model list; Other / enter manually is available when not listed.
+- Serial number: editable, with an explicit checked-against-meter tick or unable-to-confirm option.
+- Register and reading: reading is entered manually; digit count is selected from a list.
+- Safety/tampering observation: completed with no concern visible, possible concern, or not checked / could not check safely. This is not a safety clearance.
 
-This is an offline OCR foundation, not the finished production Prof. It does not yet classify meter models, reliably separate serial numbers from readings, interpret registers, or certify safe/tampered conditions. OCR accuracy must be measured against real electricity and gas meters in glare, darkness, rain, blur, obstruction, and awkward angles. When the text is absent or uncertain, the product must say so and let the colleague enter it manually.
+The colleague may submit with any field marked unable to confirm. A recognized character is never treated as a confirmed reading. The raw OCR text is hidden in a diagnostic view. No address or customer details are requested.
+
+## Live sweep behavior
+
+- The colleague starts the camera and sweeps slowly from a safe position, pausing over text.
+- OCR samples frames at a bounded rate and only the latest queued camera frame is retained while processing catches up.
+- Repeated text is surfaced as diagnostic evidence; it is not automatically assigned to the serial or reading fields.
+- Passing frames are processed in memory and discarded. The live sweep does not create a video recording.
+- If the view is unclear, the colleague can stop, choose a still photo, enter values manually, or mark them unable to confirm.
+- A photo scan stops after 20 seconds; a live sweep stops after 60 seconds.
+
+## Boundaries
+
+This is a trial build, not production meter recognition or an all-weather reliability claim. Camera quality, focus, resolution, glare, water, darkness, motion and meter type affect what can be read. The app does not certify safety, prove that no tampering exists, or replace an approved work procedure. Three meters are not enough to validate all phones, meter families or weather conditions.
+
+Trial answers are held in memory for the current app session only. The app has no INTERNET permission, account, cloud API or server submission. This trial does not yet provide durable record export or business-sale data controls.
 
 ## Build
 
-The GitHub Actions workflow in `.github/workflows/build-offline-prof.yml` builds `app-debug.apk` and publishes it as an Actions artifact. The APK is a test build, not a signed release.
+The GitHub Actions workflow .github/workflows/build-offline-prof.yml builds a debug APK as an Actions artifact. It is a test build, not a signed release. CameraX dependencies are bundled in the APK; Latin text recognition uses the bundled ML Kit model, so scanning does not require downloading a model at runtime.
