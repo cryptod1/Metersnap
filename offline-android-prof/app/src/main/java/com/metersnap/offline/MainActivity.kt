@@ -278,6 +278,7 @@ class MainActivity : ComponentActivity() {
                 sweeping = true
                 lastFrameAt = 0L
                 analysedFrames = 0
+
                 observedLines.clear()
                 photoPreview.visibility = View.GONE
                 preview.visibility = View.VISIBLE
