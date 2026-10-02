@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
     private val observedLines = linkedMapOf<String, Int>()
     private var photoUri: Uri? = null
     private var cameraProvider: ProcessCameraProvider? = null
+
     private var previewUseCase: Preview? = null
     private var analysisUseCase: ImageAnalysis? = null
     private var sweeping = false
@@ -231,7 +232,7 @@ class MainActivity : ComponentActivity() {
         val input = EditText(this).apply {
             hint = placeholder
             textSize = 16f
-            singleLine = true
+            setSingleLine(true)
             inputType = if (numeric) InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL else InputType.TYPE_CLASS_TEXT
             setPadding(dp(10), dp(7), dp(10), dp(7))
             group.addView(this)
@@ -252,7 +253,7 @@ class MainActivity : ComponentActivity() {
         else requestPermissions(arrayOf(Manifest.permission.CAMERA), cameraPermissionRequest)
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == cameraPermissionRequest && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) startSweep()
         else if (requestCode == cameraPermissionRequest) setStatus("Camera permission was not granted. Choose a saved photo or enter the details manually.")
