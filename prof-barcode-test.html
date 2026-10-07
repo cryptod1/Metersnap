@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MeterSnap Prof + Evidence Passport 0.13</title>
+<style>
+:root{--g:#0f3d31;--g2:#174f40;--ink:#12211c;--muted:#60706a;--line:#d9e2de;--soft:#f4f8f6;--ok:#edf8ef;--blue:#eef6fb}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#eef3f1;color:var(--ink)}
+button,input,select,textarea{font:inherit}.app{max-width:520px;margin:auto;min-height:100vh;background:#fff}.header{background:var(--g);color:#fff;padding:18px;position:sticky;top:0;z-index:4}
+.brand{display:flex;gap:11px;align-items:center}.logo{width:43px;height:43px;border:2px solid #fff;border-radius:12px;display:grid;place-items:center;font-weight:900}.title{font-weight:900;font-size:22px}.sub{font-size:12px;opacity:.85;text-transform:uppercase;letter-spacing:.08em}
+main{padding:18px}.screen{display:none}.screen.active{display:block}.hero{background:linear-gradient(145deg,var(--g),var(--g2));color:#fff;border-radius:20px;padding:22px;margin-bottom:16px}.hero h1{font-size:30px;line-height:1.04;margin:0 0 10px}.hero p{margin:0;opacity:.9}
+.badge{display:inline-block;margin-top:14px;padding:7px 10px;border-radius:999px;background:#ffffff1a;border:1px solid #ffffff33;font-size:12px;font-weight:800}
+.card{border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0}.meta{font-size:13px;color:var(--muted)}.row{display:flex;gap:10px}.row>*{flex:1}
+.btn{border:none;border-radius:14px;padding:14px 16px;font-weight:900;width:100%}.primary{background:var(--g);color:#fff}.secondary{background:#fff;color:var(--g);border:1px solid var(--g)}.ghost{background:var(--soft);border:1px solid var(--line)}.btn:disabled{opacity:.45}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.kpi div{background:var(--soft);border-radius:13px;padding:11px;text-align:center}.kpi b{display:block;font-size:19px}
+.test{border:1px solid var(--line);border-radius:14px;padding:13px;display:flex;align-items:center;justify-content:space-between;margin:9px 0}.test.done{background:var(--ok)}.pill{font-size:11px;font-weight:900;border-radius:999px;padding:6px 9px;background:var(--soft)}
+.videoWrap{position:relative;border-radius:18px;overflow:hidden;background:#101815;aspect-ratio:3/4}video{width:100%;height:100%;object-fit:cover}.scanframe{position:absolute;inset:11%;border:2px solid #d9ffec;border-radius:18px;box-shadow:0 0 0 999px #00160b30}
+.scanline{position:absolute;left:14%;right:14%;height:3px;background:#93efb4;animation:scan 1.8s linear infinite}@keyframes scan{0%{top:18%}50%{top:79%}100%{top:18%}}
+.cameraNote{position:absolute;left:12px;right:12px;bottom:12px;background:#06261dcc;color:#fff;padding:9px;border-radius:10px;font-size:12px}
+.checks{margin-top:12px;background:#0c2d24;color:#fff;border-radius:15px;padding:12px}.check{padding:7px 0;border-bottom:1px solid #ffffff18;opacity:.38;font-weight:800}.check:last-child{border-bottom:0}.check.on{opacity:1}.check.on:before{content:"✓ ";color:#9deaaf}
+.alert{border-radius:13px;padding:12px;margin:11px 0;font-size:13px}.blue{background:var(--blue);border:1px solid #c8dfef}.dangerbox{background:#fff0ee;border:1px solid #efc7c0;color:#5f1c16}
+.field{margin:12px 0}label{display:block;font-size:12px;font-weight:900;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;color:#42524c}
+input,select,textarea{width:100%;padding:13px;border:1px solid #cfdad5;border-radius:12px;background:#fff}textarea{min-height:82px}.bigread{font-size:34px;font-weight:950;letter-spacing:.05em;background:var(--soft);padding:14px;border-radius:14px;text-align:center}.hidden{display:none!important}
+.progress{height:8px;background:#e5ece9;border-radius:99px;overflow:hidden;margin:10px 0}.progress>div{height:100%;background:var(--g);width:0}.scoregrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.scoregrid button{padding:11px;border-radius:11px;border:1px solid var(--line);background:#fff;font-weight:800}.scoregrid button.sel{background:var(--g);color:#fff}.footerNote{font-size:11px;color:#75847e;text-align:center;padding:16px 5px}
+</style>
+</head>
+<body><div class="app">
+<div class="header"><div class="brand"><div class="logo">MS</div><div><div class="title">MeterSnap Prof</div><div class="sub">Prof Evaluation · Evidence Passport 0.13</div></div></div></div>
+<main>
+<section id="home" class="screen active">
+<div class="hero"><h1>Scan.<br>Record.<br>Submit.</h1><p>A clean evaluation of Prof's live meter recognition and reading assistance.</p><span class="badge">5 TEST METERS · NO CUSTOMER DATA</span></div>
+<div class="card"><h3>Evaluation rules</h3><div class="meta">Prof attempts the meter first. The trainer then confirms, corrects or marks the result unable to verify. No address, customer name, postcode or location is required.</div></div>
+<div class="kpi"><div><b>5</b><span class="meta">meters</span></div><div><b id="homeDone">0</b><span class="meta">submitted</span></div><div><b id="homeLeft">5</b><span class="meta">remaining</span></div></div>
+<button class="btn primary" onclick="openTests()">BEGIN PROF EVALUATION</button>
+<button class="btn secondary" style="margin-top:9px" onclick="showScreen('passport')">OPEN EVIDENCE PASSPORT</button>
+<button class="btn ghost" style="margin-top:9px" onclick="showScreen('research')">DATA &amp; INTEGRATION MAP</button>
+<div class="footerNote">Normal live scanning does not store a photograph. Evidence capture is reserved for a detected safety/tampering concern.</div>
+</section>
+
+<section id="tests" class="screen">
+<h2 style="margin:0">Test meters</h2><div class="meta">Choose the physical meter you are about to scan.</div>
+<div class="progress"><div id="prog"></div></div><div id="testList"></div>
+<button class="btn secondary" onclick="showScreen('home')">BACK</button>
+</section>
+
+<section id="scan" class="screen">
+<div class="meta" id="scanLabel"></div><h2 style="margin:2px 0 12px">Live Prof</h2>
+<div class="videoWrap"><video id="video" autoplay playsinline muted></video><div class="scanframe"></div><div class="scanline"></div><div class="cameraNote" id="camNote">Keep as much of the meter face and label in view as practical. Prof must tolerate glare, darkness, dirt, awkward angles and shaky hands.</div></div>
+<div class="card"><h3>Optional barcode field test</h3><div class="meta">Try to read a barcode on the meter label. This runs on your phone and does not send the value anywhere. A barcode may contain something other than the printed meter serial.</div><button class="btn secondary" id="barcodeStart" style="margin-top:10px" onclick="startBarcodeScan()">START BARCODE CHECK</button><button class="btn ghost hidden" id="barcodeStop" style="margin-top:8px" onclick="stopBarcodeScan()">STOP BARCODE CHECK</button><div id="barcodeStatus" class="meta" style="margin-top:9px">Barcode check has not started.</div><div class="field"><label>Detected barcode value (or enter manually)</label><input id="barcodeRaw" autocomplete="off" placeholder="Not read yet"></div><div id="barcodeFormat" class="meta">No barcode detected.</div></div>
+<div class="checks"><div class="check" id="c1">Meter type / model</div><div class="check" id="c2">Serial number</div><div class="check" id="c3">Correct register</div><div class="check" id="c4">Reading & digit confidence</div><div class="check" id="c5">Visible safety concerns</div><div class="check" id="c6">Possible bypass / tampering signs</div></div>
+<div class="alert blue">Prof reports only what is visible. “Nothing detected” does not certify the installation is safe.</div>
+<div class="row"><button class="btn secondary" onclick="stopCamera();showScreen('tests')">CANCEL</button><button class="btn primary" onclick="simulateProf()">METER IN VIEW</button></div>
+<div class="meta" style="text-align:center;margin-top:8px">Prototype: recognition is simulated until the real vision model/API is connected. Production Prof should use multi-frame confidence, never invent an unreadable digit, and offer photo upload as a fallback.</div>
+</section>
+
+<section id="result" class="screen">
+<div class="meta" id="resultLabel"></div><h2 style="margin:2px 0 12px">Prof result</h2>
+<div class="card">
+<div class="field"><label>Meter type / model</label><input id="model" value="Unable to confirm exact model"></div>
+<div class="field"><label>Serial number Prof read</label><input id="serial" placeholder="Prof detected serial"></div>
+<div class="card"><h3>Compare barcode with printed serial</h3><div class="meta">Keep the barcode value separate from the printed serial. A difference needs a human check; it does not prove the meter is wrong.</div><button class="btn ghost" style="margin-top:10px" onclick="useBarcodeCandidate()">USE BARCODE AS SERIAL CANDIDATE</button><div class="field"><label>Serial printed next to the barcode</label><input id="printedSerial" autocomplete="off" placeholder="Type the visible serial"></div><button class="btn secondary" onclick="compareBarcode()">COMPARE VALUES</button><div id="barcodeComparison" class="meta" style="margin-top:8px">Not compared.</div></div>
+<div class="field"><label>Register</label><input id="register" value="Active Import"></div>
+<div class="field"><label>Digits required</label><select id="digits"><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select></div>
+<div class="field"><label>Reading</label><div class="bigread" id="readDisplay">00000</div><input id="reading" value="00000" inputmode="numeric" oninput="readDisplay.textContent=this.value||'—'"></div>
+<div class="field"><label>Register / direction</label><select id="flowRegister"><option>Single register</option><option>Rate 1</option><option>Rate 2</option><option>A+ Import</option><option>A− Export</option><option>Unable to confirm</option></select></div>
+<div class="field"><label>Second rate reading (when applicable)</label><input id="rate2Reading" inputmode="numeric" placeholder="Do not assume Rate 1 / Rate 2 means day / night"></div>
+<div class="alert blue"><b>Prof rule:</b> unreadable means unreadable. Never manufacture a digit to complete a reading.</div>
+</div>
+<div class="card"><h3>How to read this meter ▼</h3><div class="meta" id="howTo">Exact model not confirmed — take a closer view of the front label before giving model-specific button instructions.</div></div>
+<div class="card"><h3>Visible safety / tampering check</h3><div class="meta">No concern detected in prototype scan. This is not a declaration that the installation is safe.</div><button class="btn ghost" style="margin-top:10px" onclick="showConcern()">TEST CONCERN DETECTION</button></div>
+<div id="concernBox" class="alert dangerbox hidden"><b>⚠ POSSIBLE SAFETY / TAMPERING CONCERN</b><br>Prototype evidence event recorded. Do not touch or investigate the installation. Follow approved company procedure.</div>
+<div class="card"><h3>Trainer verdict</h3><div class="meta">Judge Prof's result, not the appearance of the demo.</div>
+<div class="scoregrid" style="margin-top:10px"><button onclick="setVerdict(this,'Correct')">Correct</button><button onclick="setVerdict(this,'Partly correct')">Partly correct</button><button onclick="setVerdict(this,'Incorrect')">Incorrect</button><button onclick="setVerdict(this,'Unable to verify')">Unable to verify</button></div>
+<div class="field"><label>Correction / trainer note</label><textarea id="trainerNote" placeholder="Optional: what Prof got wrong or could not confirm"></textarea></div></div>
+<div class="row"><button class="btn secondary" onclick="restartScan()">RESCAN</button><button class="btn primary" id="submitBtn" disabled onclick="submitTest()">SUBMIT</button></div>
+</section>
+
+<section id="summary" class="screen">
+<div class="hero"><h1>Evaluation complete</h1><p>Five test submissions recorded locally on this device.</p></div>
+<div id="summaryList"></div>
+<button class="btn primary" onclick="downloadResults()">EXPORT RESULTS</button><button class="btn secondary" style="margin-top:9px" onclick="resetAll()">RESET TEST</button>
+<div class="footerNote">Standalone prototype only: no server transmission. Export creates a local JSON evaluation file.</div>
+</section>
+
+<section id="passport" class="screen">
+  <div class="hero"><h1>Evidence Passport</h1><p>Capture once. Reuse the dated field evidence for future energy work.</p><span class="badge">OBSERVATION ≠ CERTIFICATION</span></div>
+  <div class="card"><h3>Purpose</h3><div class="meta">A supplier-neutral structured evidence record for meter work and future EV, heat-pump, solar/PV, battery, V2G and supply-upgrade workflows. Raw observations stay separate from Prof interpretation and from any authoritative verification.</div></div>
+
+  <div class="card"><h3>1 · Asset identity</h3>
+    <div class="field"><label>Fuel / service</label><select id="epFuel"><option>Electricity</option><option>Gas</option><option>Water</option></select></div>
+    <div class="field"><label>MPAN / MPRN / SPID (when legitimately supplied)</label><input id="epAssetId" placeholder="Do not infer or fabricate"></div>
+    <div class="field"><label>Meter serial number (MSN)</label><input id="epMsn"></div>
+    <div class="field"><label>Meter make / model</label><input id="epModel"></div>
+    <div class="field"><label>Register / reading evidence</label><textarea id="epReading" placeholder="Register, digit count, Rate 1 / Rate 2 or A+ / A− as visibly confirmed"></textarea></div>
+  </div>
+
+  <div class="card"><h3>2 · Incoming supply evidence</h3>
+    <div class="field"><label>Service head / cut-out</label><textarea id="epCutout" placeholder="Visible type, markings and rating only"></textarea></div>
+    <div class="field"><label>Phase indicators</label><select id="epPhase"><option>Not observed</option><option>Single-phase indicators visible</option><option>Three-phase indicators visible</option><option>Unclear — needs verification</option></select></div>
+    <div class="field"><label>Incoming arrangement / loop indicators</label><textarea id="epIncoming"></textarea></div>
+    <div class="field"><label>Meter tails</label><textarea id="epTails" placeholder="Visible size/markings/condition where legible — no engineering conclusion"></textarea></div>
+    <div class="field"><label>Isolator</label><textarea id="epIsolator"></textarea></div>
+    <div class="field"><label>Earthing evidence</label><textarea id="epEarthing" placeholder="Record what is visible; do not certify"></textarea></div>
+    <div class="field"><label>Consumer-unit context</label><textarea id="epConsumerUnit"></textarea></div>
+  </div>
+
+  <div class="card"><h3>3 · Existing low-carbon equipment</h3>
+    <div class="field"><label>Equipment observed</label><textarea id="epLct" placeholder="EV charger, solar/PV, battery, heat pump, export equipment or other relevant assets"></textarea></div>
+    <div class="field"><label>Future-work notes</label><textarea id="epFuture" placeholder="Evidence potentially useful to a later installer / DNO workflow"></textarea></div>
+  </div>
+
+  <div class="card"><h3>4 · Safety / tampering evidence</h3>
+    <div class="alert dangerbox"><b>Conservative evidence only.</b> Separate customer report, colleague observation and Prof visual evidence. Use “possible indication”; never accuse a person of tampering and never treat “nothing detected” as proof that the installation is safe.</div>
+    <div class="field"><label>Customer-reported concern</label><textarea id="epCustomerConcern"></textarea></div>
+    <div class="field"><label>Colleague observation</label><textarea id="epColleagueConcern" placeholder="Examples may include smell, hissing, heat or shocks only when actually reported/observed"></textarea></div>
+    <div class="field"><label>Prof visual evidence</label><textarea id="epProfConcern" placeholder="Possible bypass, corrosion/change, orientation, wiring, seals, fire/fault indicators — visible evidence only"></textarea></div>
+    <div class="field"><label>Condition / anomaly notes</label><textarea id="epCondition"></textarea></div>
+  </div>
+
+  <div class="card"><h3>5 · Evidence status</h3>
+    <div class="field"><label>Classification</label><select id="epStatus"><option>Observed in field</option><option>Verified against authorised source</option><option>Requires engineering verification</option></select></div>
+    <div class="field"><label>Evidence notes</label><textarea id="epNotes"></textarea></div>
+    <div class="meta">Photographic evidence should be dated and retained according to the approved operational/privacy policy. The passport records evidence; it does not certify installation suitability.</div>
+  </div>
+
+  <button class="btn primary" onclick="exportPassport()">EXPORT EVIDENCE PASSPORT</button>
+  <button class="btn secondary" style="margin-top:9px" onclick="showScreen('home')">BACK TO HOME</button>
+</section>
+
+<section id="research" class="screen">
+  <div class="hero"><h1>Data &amp; integration map</h1><p>Keep MeterSnap supplier-neutral and distinguish public information from authorised industry data.</p></div>
+  <div class="card"><h3>Electricity</h3><div class="meta"><b>Identifier:</b> MPAN. Expected asset data may be available through authorised EES/ECOES / ElectraLink routes, including supplier, MSN and technical meter details. These are controlled industry services, not unrestricted public customer-meter APIs.</div></div>
+  <div class="card"><h3>Gas</h3><div class="meta"><b>Identifier:</b> MPRN. Xoserve services can support authorised meter-asset data such as MSN, supplier, capacity, mechanism, type/model and manufacture information. Access is controlled.</div></div>
+  <div class="card"><h3>Water</h3><div class="meta"><b>Identifier:</b> SPID. A future supplier-neutral architecture can accommodate MOSL/CMOS where legitimate access and the use case permit it.</div></div>
+  <div class="card"><h3>Matching principle</h3><div class="meta">Authorised expected asset data and physical camera observations are different evidence sources. MeterSnap should compare them and surface mismatches; it must not silently turn one into the other.</div></div>
+  <div class="card"><h3>Future integrations</h3><div class="meta">Evidence may later support installer, DNO and ENA Connect Direct-style workflows for EV, heat pump, solar/PV, battery, V2G and supply upgrades. Suitability decisions remain with the authorised engineering process.</div></div>
+  <div class="card"><h3>Scope boundary</h3><div class="meta"><b>Job Manager remains parked.</b> No routing, allocation or scheduling is added to Prof evaluation or the Evidence Passport. MeterSnap stays focused on Scan → Record → Submit and reusable field evidence.</div></div>
+  <button class="btn secondary" onclick="showScreen('home')">BACK TO HOME</button>
+</section>
+
+</main></div>
+<script>
+const tests=[1,2,3,4,5].map(i=>({id:i,label:`Test Meter ${i}`,expectedSerial:"PENDING"}));
+let current=0,stream=null,verdict="",concern=false,barcodeDetector=null,barcodeTimer=null,barcodeBusy=false,barcodeDetectedFormat="";
+let results=JSON.parse(localStorage.getItem("metersnap_prof_eval")||"[]");
+function showScreen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);updateCounts()}
+function updateCounts(){homeDone.textContent=results.length;homeLeft.textContent=5-results.length;prog.style.width=(results.length/5*100)+"%"}
+function openTests(){renderTests();showScreen("tests")}
+function renderTests(){testList.innerHTML="";tests.forEach((t,i)=>{let done=results.some(r=>r.testId===t.id),d=document.createElement("div");d.className="test"+(done?" done":"");d.innerHTML=`<div><b>${t.label}</b><div class="meta">${done?"Submitted":"Ready to scan"}</div></div><button class="btn ${done?"ghost":"primary"}" style="width:auto;padding:10px 13px" ${done?"disabled":""} onclick="startTest(${i})">${done?"DONE":"START"}</button>`;testList.appendChild(d)})}
+async function startTest(i){current=i;verdict="";concern=false;barcodeDetectedFormat="";barcodeRaw.value="";printedSerial.value="";barcodeFormat.textContent="No barcode detected.";barcodeStatus.textContent="Barcode check has not started.";barcodeComparison.textContent="Not compared.";submitBtn.disabled=true;trainerNote.value="";concernBox.classList.add("hidden");document.querySelectorAll(".scoregrid button").forEach(b=>b.classList.remove("sel"));for(let n=1;n<=6;n++)document.getElementById("c"+n).classList.remove("on");scanLabel.textContent=`Test Meter ${i+1} of 5`;resultLabel.textContent=`Test Meter ${i+1} of 5`;showScreen("scan");await startCamera()}
+async function startCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});video.srcObject=stream;camNote.textContent="Camera live — keep the whole meter face inside the frame."}catch(e){camNote.textContent="Live camera unavailable in this browser. Prototype controls remain available."}}
+function stopCamera(){stopBarcodeScan();if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null}
+async function startBarcodeScan(){
+  if(barcodeTimer)return;
+  if(!stream){await startCamera();if(!stream){barcodeStatus.textContent="Camera unavailable. You can still enter a barcode value manually.";return}}
+  if(!(window.BarcodeDetector&&BarcodeDetector.getSupportedFormats)){barcodeStatus.textContent="This browser does not provide barcode scanning. You can still enter a value manually.";return}
+  try{
+    const supported=await BarcodeDetector.getSupportedFormats();
+    const wanted=["code_128","code_39","code_93","codabar","data_matrix","ean_13","ean_8","itf","qr_code","upc_a","upc_e","aztec","pdf417"];
+    const formats=wanted.filter(f=>supported.includes(f));
+    if(!formats.length){barcodeStatus.textContent="No supported barcode formats found. You can still enter a value manually.";return}
+    barcodeDetector=new BarcodeDetector({formats});
+    barcodeStatus.textContent="Scanning the live camera locally. Keep the barcode steady and in focus.";
+    barcodeStart.classList.add("hidden");barcodeStop.classList.remove("hidden");
+    barcodeTimer=setInterval(async()=>{
+      if(barcodeBusy||!video||video.readyState<2)return;
+      barcodeBusy=true;
+      try{const found=await barcodeDetector.detect(video);if(found&&found.length){const hit=found[0];barcodeRaw.value=hit.rawValue||"";barcodeDetectedFormat=hit.format||"unknown";barcodeFormat.textContent="Detected format: "+barcodeDetectedFormat+". Check the value against the printed serial.";barcodeStatus.textContent="Barcode detected. Scan paused; review the raw value before using it.";stopBarcodeScan()}}
+      catch(e){barcodeStatus.textContent="Scan could not read this frame. Adjust angle or light, or enter the value manually."}
+      finally{barcodeBusy=false}
+    },450);
+  }catch(e){barcodeStatus.textContent="Barcode scanning could not start in this browser. You can still enter a value manually."}
+}
+function stopBarcodeScan(){if(barcodeTimer){clearInterval(barcodeTimer);barcodeTimer=null}barcodeStart.classList.remove("hidden");barcodeStop.classList.add("hidden");barcodeDetector=null}
+function useBarcodeCandidate(){if(!barcodeRaw.value.trim()){barcodeComparison.textContent="No barcode value to use yet.";return}serial.value=barcodeRaw.value.trim();barcodeComparison.textContent="Copied as a candidate. Confirm it against the printed serial before submitting."}
+function normalizeBarcode(value){return(value||"").replace(/[^a-z0-9]/gi,"").toUpperCase()}
+function barcodeValuesMatch(){return!!barcodeRaw.value.trim()&&!!printedSerial.value.trim()&&normalizeBarcode(barcodeRaw.value)===normalizeBarcode(printedSerial.value)}
+function compareBarcode(){if(!barcodeRaw.value.trim()||!printedSerial.value.trim()){barcodeComparison.textContent="Enter both values before comparing.";return}barcodeComparison.textContent=barcodeValuesMatch()?"Values match after removing spaces and punctuation. Please visually confirm.":"Values differ. Check whether the barcode contains a different identifier; do not treat this alone as a meter mismatch."}
+function simulateProf(){let n=1,t=setInterval(()=>{if(n<=6){document.getElementById("c"+n).classList.add("on");n++}else{clearInterval(t);setTimeout(()=>{stopCamera();model.value="Unable to confirm exact model";serial.value="";register.value="Active Import";digits.value="5";reading.value="00000";readDisplay.textContent="00000";showScreen("result")},250)}},300)}
+function setVerdict(btn,v){verdict=v;document.querySelectorAll(".scoregrid button").forEach(b=>b.classList.remove("sel"));btn.classList.add("sel");submitBtn.disabled=false}
+function showConcern(){concern=true;concernBox.classList.remove("hidden")}
+function restartScan(){showScreen("scan");startCamera()}
+function submitTest(){results.push({testId:tests[current].id,testLabel:tests[current].label,expectedSerial:tests[current].expectedSerial,profModel:model.value,profSerial:serial.value,barcodeValue:barcodeRaw.value,barcodeFormat:barcodeDetectedFormat,printedSerial:printedSerial.value,barcodeMatch:barcodeValuesMatch(),profRegister:register.value,digitsRequired:digits.value,reading:reading.value,flowRegister:flowRegister.value,rate2Reading:rate2Reading.value,concernDetected:concern,trainerVerdict:verdict,trainerNote:trainerNote.value,submittedAt:new Date().toISOString()});localStorage.setItem("metersnap_prof_eval",JSON.stringify(results));if(results.length>=5){renderSummary();showScreen("summary")}else{renderTests();showScreen("tests")}}
+function renderSummary(){summaryList.innerHTML="";results.sort((a,b)=>a.testId-b.testId).forEach(r=>{let d=document.createElement("div");d.className="card";d.innerHTML=`<b>${r.testLabel}</b><span class="pill" style="float:right">${r.trainerVerdict}</span><div class="meta" style="margin-top:8px">Serial read: ${r.profSerial||"Not confirmed"}<br>Reading: ${r.reading} · ${r.digitsRequired} digits<br>${r.concernDetected?"Concern test triggered":"No concern event"}</div>`;summaryList.appendChild(d)})}
+function downloadResults(){let blob=new Blob([JSON.stringify({product:"MeterSnap Prof Evaluation",version:"0.1",results},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="metersnap-prof-evaluation-results.json";a.click()}
+function resetAll(){if(confirm("Reset all five evaluation results on this device?")){results=[];localStorage.removeItem("metersnap_prof_eval");showScreen("home")}}
+updateCounts();
+
+function exportPassport(){
+  const ids=["epFuel","epAssetId","epMsn","epModel","epReading","epCutout","epPhase","epIncoming","epTails","epIsolator","epEarthing","epConsumerUnit","epLct","epFuture","epCustomerConcern","epColleagueConcern","epProfConcern","epCondition","epStatus","epNotes"];
+  const evidence={product:"MeterSnap Evidence Passport",version:"0.13",createdAt:new Date().toISOString(),principle:"Evidence is not certification",data:{}};
+  ids.forEach(id=>{const el=document.getElementById(id);evidence.data[id]=el?el.value:""});
+  const blob=new Blob([JSON.stringify(evidence,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="metersnap-evidence-passport.json";a.click();
+}
+
+</script></body></html>
