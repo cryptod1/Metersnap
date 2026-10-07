@@ -248,7 +248,28 @@ async function startBarcodeScan(){
   }catch(e){barcodeStatus.textContent="Barcode scanning could not start in this browser. You can still enter a value manually."}
 }
 function stopBarcodeScan(){if(barcodeTimer){clearInterval(barcodeTimer);barcodeTimer=null}barcodeStart.classList.remove("hidden");barcodeStop.classList.add("hidden");barcodeDetector=null}
-async function scanBarcodePhoto(input){const file=input.files&&input.files[0];if(!file)return;barcodeStatus.textContent="Reading the selected photo on this phone…";barcodeResults=[];barcodeCandidates.innerHTML="";barcodeRaw.value="";barcodeDetectedFormat="";if(!(window.BarcodeDetector&&BarcodeDetector.getSupportedFormats)){barcodeStatus.textContent="Photo barcode reading is unavailable in this browser. You can enter a barcode value manually.";input.value="";return}let bitmap=null;try{const supported=await BarcodeDetector.getSupportedFormats(),wanted=["code_128","code_39","code_93","codabar","data_matrix","ean_13","ean_8","itf","qr_code","upc_a","upc_e","aztec","pdf417"],formats=wanted.filter(f=>supported.includes(f));if(!formats.length)throw new Error("No supported barcode formats");bitmap=await createImageBitmap(file);const detector=new BarcodeDetector({formats}),found=await detector.detect(bitmap);if(found&&found.length){showBarcodeResults(found,"selected photo");barcodeFormat.textContent="Select a candidate below to review its decoded value.";barcodeStatus.textContent=found.length+" barcode candidate(s) found in the photo. Select one to review."}else{barcodeFormat.textContent="No barcode decoded from this photo.";barcodeStatus.textContent="No barcode found. Try a closer, sharper photo or enter the value manually."}}catch(e){barcodeStatus.textContent="Could not read a barcode from this photo. Try a sharper, closer image or enter the value manually."}finally{if(bitmap&&bitmap.close)bitmap.close();input.value=""}}
+async function detectBarcodesInPhoto(bitmap,detector){
+  const w=bitmap.width,h=bitmap.height,regions=[[0,0,1,1],[.02,.05,.96,.40],[.02,.30,.96,.40],[.02,.56,.96,.40],[.02,.32,.56,.40],[.02,.52,.56,.40],[.42,.32,.56,.40],[.42,.52,.56,.40]],found=[];
+  for(let i=0;i<regions.length;i++){
+    let source=bitmap;
+    if(i>0){
+      const r=regions[i],sx=Math.round(w*r[0]),sy=Math.round(h*r[1]),sw=Math.min(w-sx,Math.round(w*r[2])),sh=Math.min(h-sy,Math.round(h*r[3]));
+      if(sw<80||sh<50)continue;
+      const scale=Math.min(3,1800/Math.max(sw,sh)),canvas=document.createElement("canvas");
+      canvas.width=Math.round(sw*scale);canvas.height=Math.round(sh*scale);
+      const ctx=canvas.getContext("2d");ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+      ctx.drawImage(bitmap,sx,sy,sw,sh,0,0,canvas.width,canvas.height);source=canvas
+    }
+    try{
+      const hits=await detector.detect(source);
+      for(const hit of hits||[]){const rawValue=hit.rawValue||"",format=hit.format||"unknown";
+        if(rawValue&&!found.some(x=>x.rawValue===rawValue&&x.format===format))found.push({rawValue,format})
+      }
+    }catch(e){}
+  }
+  return found
+}
+async function scanBarcodePhoto(input){const file=input.files&&input.files[0];if(!file)return;barcodeStatus.textContent="Reading the selected photo on this phone…";barcodeResults=[];barcodeCandidates.innerHTML="";barcodeRaw.value="";barcodeDetectedFormat="";if(!(window.BarcodeDetector&&BarcodeDetector.getSupportedFormats)){barcodeStatus.textContent="Photo barcode reading is unavailable in this browser. You can enter a barcode value manually.";input.value="";return}let bitmap=null;try{const supported=await BarcodeDetector.getSupportedFormats(),wanted=["code_128","code_39","code_93","codabar","data_matrix","ean_13","ean_8","itf","qr_code","upc_a","upc_e","aztec","pdf417"],formats=wanted.filter(f=>supported.includes(f));if(!formats.length)throw new Error("No supported barcode formats");bitmap=await createImageBitmap(file);const detector=new BarcodeDetector({formats}),found=await detectBarcodesInPhoto(bitmap,detector);if(found&&found.length){showBarcodeResults(found,"selected photo");barcodeFormat.textContent="Select a candidate below to review its decoded value.";barcodeStatus.textContent=found.length+" barcode candidate(s) found in the photo. Select one to review."}else{barcodeFormat.textContent="No barcode decoded from this photo.";barcodeStatus.textContent="No barcode found. Try a closer, sharper photo or enter the value manually."}}catch(e){barcodeStatus.textContent="Could not read a barcode from this photo. Try a sharper, closer image or enter the value manually."}finally{if(bitmap&&bitmap.close)bitmap.close();input.value=""}}
 function showBarcodeResults(found,source){barcodeResults=Array.from(found).map(hit=>({rawValue:hit.rawValue||"",format:hit.format||"unknown",source}));barcodeCandidates.innerHTML="";barcodeResults.forEach((hit,index)=>{const button=document.createElement("button");button.type="button";button.className="btn ghost";button.style.marginTop="7px";button.textContent="Select "+(index+1)+" · "+hit.format+" · "+(hit.rawValue||"(empty)");button.addEventListener("click",()=>selectBarcodeResult(index));barcodeCandidates.appendChild(button)})}
 function selectBarcodeResult(index){const hit=barcodeResults[index];if(!hit)return;barcodeRaw.value=hit.rawValue;barcodeDetectedFormat=hit.format;barcodeFormat.textContent="Selected from "+hit.source+" · format: "+hit.format+". Check against the printed serial.";barcodeStatus.textContent="Candidate selected. Confirm it against the printed serial."}
 function useBarcodeCandidate(){if(!barcodeRaw.value.trim()){barcodeComparison.textContent="No barcode value to use yet.";return}serial.value=barcodeRaw.value.trim();barcodeComparison.textContent="Copied as a candidate. Confirm it against the printed serial before submitting."}
