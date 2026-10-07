@@ -160,22 +160,30 @@ function loadTesseract(){if(window.Tesseract)return Promise.resolve();if(ocrScri
 async function getOcrWorker(){if(!ocrWorkerPromise)ocrWorkerPromise=(async()=>{await loadTesseract();return await Tesseract.createWorker("eng",1,{logger:m=>{if(m.status&&ocrStatus)ocrStatus.textContent="OCR engine: "+m.status+(m.progress?" "+Math.round(m.progress*100)+"%":"")}})})();return await ocrWorkerPromise}
 function parseMeterText(text,confidence){
   const lines=(text||"").split(/\r?\n/).map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean),all=lines.join(" "),
+    score=Math.round(confidence||0),
     brands=[["Landis+Gyr",/landis\s*\+?\s*gyr/i],["Itron",/itron/i],["Elster",/elster/i],["Honeywell",/honeywell/i],["EDMI",/edmi/i],["Secure",/\bsecure\b/i],["Aclara",/aclara/i]],brand=brands.find(x=>x[1].test(all));
   let model="";
   const landisModel=/\bG\s*4?\s*7\s*0\s*6?\s*7\s*2\b/i.test(all),
     compact=all.toUpperCase().replace(/[^A-Z0-9]/g,""),
-    landisModelOcr=/G(?:4|A)?7(?:0|O|D)6?(?:7|T|Z)(?:2|Z)/.test(compact);
-  const landisSmetsPartial=brand&&brand[0]==="Landis+Gyr"&&/\bSMETS\s*2\b/i.test(all)&&/\b70\s*672\b/i.test(all);
+    landisModelOcr=/G(?:4|A)?7(?:0|O|D)6?(?:7|T|Z)(?:2|Z)/.test(compact),
+    landisSmetsPartial=brand&&brand[0]==="Landis+Gyr"&&/\bSMETS\s*2\b/i.test(all)&&/\b70\s*672\b/i.test(all);
   if(landisModel||landisModelOcr||landisSmetsPartial)model="G470 672";
-  if(!model&&brand){const at=lines.findIndex(x=>brand[1].test(x));const nearby=lines.slice(Math.max(0,at),Math.min(lines.length,at+4)).find(x=>/\d/.test(x)&&x.length<30&&!/serial|index|meter|guid/i.test(x));if(nearby)model=nearby}
+  if(!model&&brand&&score>=50){
+    const at=lines.findIndex(x=>brand[1].test(x)),
+      nearby=lines.slice(Math.max(0,at),Math.min(lines.length,at+4)).map(x=>x.match(/\b(?:[A-Z]\s*\d{3,4}(?:\s+\d{2,4})?|(?:Liberty|Quantum|Atlas)\s*\d{2,4})\b/i)).find(Boolean);
+    if(nearby)model=nearby[0].replace(/\s+/g," ").trim();
+  }
   const serials=[...new Set((all.toUpperCase().match(/\b(?=[A-Z0-9]{9,17}\b)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]+\b/g)||[]))],
     indexLine=lines.find(x=>/index|m\s*[³3]|kwh/i.test(x)&&/\d/.test(x));
-  let index="";if(indexLine){const m=indexLine.match(/\d[\d\s.,]{1,}\d|\d+/);if(m)index=m[0].replace(/\s+/g,"").replace(/,+/g,".")}
-  const serial=serials.length===1?serials[0]:"",digits=index?((index.split(/[.,]/)[0]||"").replace(/\D/g,"").length):0;
-  const metrologyYear=(all.match(/\bM\s*(2\d)\s*[A-Z0-9]{4}\b/i)||[])[1],sealLine=lines.find(x=>/landis\s*\+?\s*gyr/i.test(x)&&/\b2\d\b/.test(x)),sealYear=sealLine&&sealLine.match(/\b(2\d)\b/),year=metrologyYear?"20"+metrologyYear:sealYear?"20"+sealYear[1]:"";
-  return{make:brand?brand[0]:"",model:model,year:year,serial:serial,index:index,serialCandidates:serials,confidence:Math.round(confidence||0),digits:digits}
+  let index="";if(indexLine&&score>=45){const m=indexLine.match(/\d[\d\s.,]{1,}\d|\d+/);if(m)index=m[0].replace(/\s+/g,"").replace(/,+/g,".")}
+  const serial=score>=45&&serials.length===1?serials[0]:"",digits=index?((index.split(/[.,]/)[0]||"").replace(/\D/g,"").length):0,
+    metrologyYear=(all.match(/\bM\s*(2\d)\s*[A-Z0-9]{4}\b/i)||[])[1],
+    sealLine=lines.find(x=>/landis\s*\+?\s*gyr/i.test(x)&&/\b2\d\b/.test(x)),
+    sealYear=sealLine&&sealLine.match(/\b(2\d)\b/),
+    year=metrologyYear?"20"+metrologyYear:sealYear?"20"+sealYear[1]:"";
+  return{make:brand?brand[0]:"",model:model,year:year,serial:serial,index:index,serialCandidates:serials,confidence:score,digits:digits}
 }
-function showOcrText(text,confidence,source){ocrSuggestions=parseMeterText(text,confidence);ocrMake.value=ocrSuggestions.make;ocrModel.value=ocrSuggestions.model;ocrSerial.value=ocrSuggestions.serial;ocrIndex.value=ocrSuggestions.index;ocrYear.value=ocrSuggestions.year;ocrRaw.value=text||"";const extra=ocrSuggestions.serialCandidates.length>1?" Several serial-like values found; check the printed meter serial carefully.":"";ocrConfidence.textContent=(source||"Photo")+" text confidence "+ocrSuggestions.confidence+"%. These are suggestions; confirm them against the meter and job."+extra;model.value=[ocrSuggestions.make,ocrSuggestions.model].filter(Boolean).join(" ")||"Unable to confirm exact model";if(ocrSuggestions.serial)serial.value=ocrSuggestions.serial;if(ocrSuggestions.year)document.getElementById("year").value=ocrSuggestions.year;if(ocrSuggestions.index){reading.value=ocrSuggestions.index;readDisplay.textContent=ocrSuggestions.index}if(ocrSuggestions.digits>=4&&ocrSuggestions.digits<=8)digits.value=String(ocrSuggestions.digits)}
+function showOcrText(text,confidence,source){ocrSuggestions=parseMeterText(text,confidence);ocrMake.value=ocrSuggestions.make;ocrModel.value=ocrSuggestions.model;ocrSerial.value=ocrSuggestions.serial;ocrIndex.value=ocrSuggestions.index;ocrYear.value=ocrSuggestions.year;ocrRaw.value=text||"";const extra=ocrSuggestions.serialCandidates.length>1?" Several serial-like values found; check the printed meter serial carefully.":"";ocrConfidence.textContent=(source||"Photo")+" text confidence "+ocrSuggestions.confidence+"%. These are suggestions; confirm them against the meter and job."+(ocrSuggestions.confidence<45?" Low confidence: uncertain model, serial and index are left blank.":"")+extra;model.value=[ocrSuggestions.make,ocrSuggestions.model].filter(Boolean).join(" ")||"Unable to confirm exact model";if(ocrSuggestions.serial)serial.value=ocrSuggestions.serial;if(ocrSuggestions.year)document.getElementById("year").value=ocrSuggestions.year;if(ocrSuggestions.index){reading.value=ocrSuggestions.index;readDisplay.textContent=ocrSuggestions.index}if(ocrSuggestions.digits>=4&&ocrSuggestions.digits<=8)digits.value=String(ocrSuggestions.digits)}
 async function makeOcrPhotoVariants(file){
   const bitmap=await createImageBitmap(file),w=bitmap.width,h=bitmap.height,variants=[];
   const regions=[[.04,.16,.92,.70],[.02,.24,.68,.56],[.30,.24,.68,.56]];
