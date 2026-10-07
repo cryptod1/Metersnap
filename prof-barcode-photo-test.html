@@ -161,7 +161,7 @@ async function getOcrWorker(){if(!ocrWorkerPromise)ocrWorkerPromise=(async()=>{a
 function parseMeterText(text,confidence){
   const lines=(text||"").split(/\r?\n/).map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean),all=lines.join(" "),
     score=Math.round(confidence||0),
-    brands=[["Landis+Gyr",/landis\s*\+?\s*gyr/i],["Itron",/itron/i],["Elster",/elster/i],["Honeywell",/honeywell/i],["EDMI",/edmi/i],["Secure",/\bsecure\b/i],["Aclara",/aclara/i]],brand=brands.find(x=>x[1].test(all));
+    brands=[["Landis+Gyr",/landis\s*\+?\s*gyr/i],["Itron",/itron/i],["Actaris",/actaris/i],["Elster",/elster/i],["Honeywell",/honeywell/i],["EDMI",/edmi/i],["Secure",/\bsecure\b/i],["Aclara",/aclara/i]],brand=brands.find(x=>x[1].test(all));
   let detectedMake=brand?brand[0]:"";
   let model="";
   const landisModel=/\bG\s*4?\s*7\s*0\s*6?\s*7\s*2\b/i.test(all),
@@ -171,7 +171,7 @@ function parseMeterText(text,confidence){
     secureLiberty=/LIBERTY(?:100|1OO|I00|IOO|10O|1O0)/i.test(compact);
   if(landisModel||landisModelOcr||landisSmetsPartial)model="G470 672";
   else if(secureLiberty){model="Liberty 100";if(!detectedMake)detectedMake="Secure"}
-  else if(brand&&brand[0]==="Itron"&&/ACE\s*9000\s*KBD/i.test(all))model="ACE9000 KBD";
+  else if(/ACE\s*9000\s*KBD/i.test(all))model="ACE9000 KBD";
   if(!model&&brand&&score>=50){
     const at=lines.findIndex(x=>brand[1].test(x)),
       nearby=lines.slice(Math.max(0,at),Math.min(lines.length,at+4)).map(x=>x.match(/\b(?:[A-Z]\s*\d{3,4}(?:\s+\d{2,4})?|(?:Liberty|Quantum|Atlas)\s*\d{2,4})\b/i)).find(Boolean);
@@ -188,8 +188,9 @@ function parseMeterText(text,confidence){
       selected=usable.sort((a,b)=>b.replace(/\D/g,"").length-a.replace(/\D/g,"").length)[0]||candidates[0];
     if(selected)index=selected.replace(/\s+/g,"").replace(/,+/g,".")
   }
-  const itronSerial=brand&&brand[0]==="Itron"&&model==="ACE9000 KBD"&&serials.length===1&&/^S\d{2}[A-Z]\d{5,7}$/.test(serials[0])?serials[0]:"",
-    serial=labeledSerial||itronSerial||(score>=45&&serials.length===1?serials[0]:""),
+  const aceSerials=[...new Set((all.match(/(?:^|[^A-Z0-9])([S$]\s*\d{2}\s*[A-Z]\s*\d{4,7})(?=$|[^A-Z0-9])/gi)||[]).map(x=>{const m=x.match(/[S$]\s*\d{2}\s*[A-Z]\s*\d{4,7}/i);return m?m[0].replace(/\s/g,"").replace(/^\$/,"S").toUpperCase():""}).filter(Boolean))],
+    aceSerial=model==="ACE9000 KBD"&&aceSerials.length===1?aceSerials[0]:"",
+    serial=labeledSerial||aceSerial||(score>=45&&serials.length===1?serials[0]:""),
     digits=index?((index.split(/[.,]/)[0]||"").replace(/\D/g,"").length):0,
     metrologyYear=(all.match(/\bM\s*([12]\d)\s*[A-Z0-9]{4}\b/i)||[])[1],
     labelledYear=(all.match(/\b(?:YEAR|MANUFACTURED)\s*[:=]?\s*(20\d{2})\b/i)||[])[1],
