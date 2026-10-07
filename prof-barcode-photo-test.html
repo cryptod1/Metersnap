@@ -164,7 +164,8 @@ function parseMeterText(text,confidence){
   const landisModel=/\bG\s*4?\s*7\s*0\s*6?\s*7\s*2\b/i.test(all),
     compact=all.toUpperCase().replace(/[^A-Z0-9]/g,""),
     landisModelOcr=/G(?:4|A)?7(?:0|O|D)6?(?:7|T|Z)(?:2|Z)/.test(compact);
-  const landisSmetsPartial=brand&&brand[0]==="Landis+Gyr"&&/\\bSMETS\\s*2\\b/i.test(all)&&/\\b70\\s*672\\b/i.test(all);\n  if(landisModel||landisModelOcr||landisSmetsPartial)model="G470 672";
+  const landisSmetsPartial=brand&&brand[0]==="Landis+Gyr"&&/\bSMETS\s*2\b/i.test(all)&&/\b70\s*672\b/i.test(all);
+  if(landisModel||landisModelOcr||landisSmetsPartial)model="G470 672";
   if(!model&&brand){const at=lines.findIndex(x=>brand[1].test(x));const nearby=lines.slice(Math.max(0,at),Math.min(lines.length,at+4)).find(x=>/\d/.test(x)&&x.length<30&&!/serial|index|meter|guid/i.test(x));if(nearby)model=nearby}
   const serials=[...new Set((all.toUpperCase().match(/\b(?=[A-Z0-9]{9,17}\b)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]+\b/g)||[]))],
     indexLine=lines.find(x=>/index|m\s*[³3]|kwh/i.test(x)&&/\d/.test(x));
