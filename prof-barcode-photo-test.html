@@ -179,7 +179,7 @@ function parseMeterText(text,confidence){
   }
   const serials=[...new Set((all.toUpperCase().match(/\b(?=[A-Z0-9]{9,17}\b)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]+\b/g)||[]))],
     labeledSerial=(all.match(/\b(?:S[RT]?\s*\.?\s*NO\.?|SERIAL(?:\s+NO\.?)?)\s*[:#.]?\s*([A-Z0-9]{8,17})\b/i)||[])[1],
-    indexLine=lines.find(x=>/index|m\s*[³3]|kwh|\bE[12]\s*[>»]/i.test(x)&&/\d/.test(x));
+    indexLine=lines.find(x=>!/\bimp(?:ulses?)?\s*\/?\s*kwh\b/i.test(x)&&/index|m\s*[³3]|kwh|\bE[12]\s*[>»]/i.test(x)&&/\d/.test(x));
   let index="";
   if(indexLine&&score>=45){
     const marker=indexLine.match(/\bE[12]\s*[>»]?\s*/i),valuePart=marker?indexLine.slice(marker.index+marker[0].length):indexLine,
