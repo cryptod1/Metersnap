@@ -162,14 +162,15 @@ function parseMeterText(text,confidence){
   const lines=(text||"").split(/\r?\n/).map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean),all=lines.join(" "),
     score=Math.round(confidence||0),
     brands=[["Landis+Gyr",/landis\s*\+?\s*gyr/i],["Itron",/itron/i],["Elster",/elster/i],["Honeywell",/honeywell/i],["EDMI",/edmi/i],["Secure",/\bsecure\b/i],["Aclara",/aclara/i]],brand=brands.find(x=>x[1].test(all));
+  let detectedMake=brand?brand[0]:"";
   let model="";
   const landisModel=/\bG\s*4?\s*7\s*0\s*6?\s*7\s*2\b/i.test(all),
     compact=all.toUpperCase().replace(/[^A-Z0-9]/g,""),
     landisModelOcr=/G(?:4|A)?7(?:0|O|D)6?(?:7|T|Z)(?:2|Z)/.test(compact),
     landisSmetsPartial=brand&&brand[0]==="Landis+Gyr"&&/\bSMETS\s*2\b/i.test(all)&&/\b70\s*672\b/i.test(all),
-    secureLiberty=brand&&brand[0]==="Secure"&&/LIBERTY(?:100|1OO|I00|IOO|10O|1O0)/i.test(compact);
+    secureLiberty=/LIBERTY(?:100|1OO|I00|IOO|10O|1O0)/i.test(compact);
   if(landisModel||landisModelOcr||landisSmetsPartial)model="G470 672";
-  else if(secureLiberty)model="Liberty 100";
+  else if(secureLiberty){model="Liberty 100";if(!detectedMake)detectedMake="Secure"}
   if(!model&&brand&&score>=50){
     const at=lines.findIndex(x=>brand[1].test(x)),
       nearby=lines.slice(Math.max(0,at),Math.min(lines.length,at+4)).map(x=>x.match(/\b(?:[A-Z]\s*\d{3,4}(?:\s+\d{2,4})?|(?:Liberty|Quantum|Atlas)\s*\d{2,4})\b/i)).find(Boolean);
@@ -193,14 +194,14 @@ function parseMeterText(text,confidence){
     sealLine=lines.find(x=>/landis\s*\+?\s*gyr/i.test(x)&&/\b2\d\b/.test(x)),
     sealYear=sealLine&&sealLine.match(/\b(2\d)\b/),
     year=labelledYear|| (metrologyYear?"20"+metrologyYear:sealYear?"20"+sealYear[1]:"");
-  return{make:brand?brand[0]:"",model:model,year:year,serial:serial,index:index,serialCandidates:serials,confidence:score,digits:digits}
+  return{make:detectedMake,model:model,year:year,serial:serial,index:index,serialCandidates:serials,confidence:score,digits:digits}
 }
 function showOcrText(text,confidence,source){ocrSuggestions=parseMeterText(text,confidence);ocrMake.value=ocrSuggestions.make;ocrModel.value=ocrSuggestions.model;ocrSerial.value=ocrSuggestions.serial;ocrIndex.value=ocrSuggestions.index;ocrYear.value=ocrSuggestions.year;ocrRaw.value=text||"";const extra=ocrSuggestions.serialCandidates.length>1?" Several serial-like values found; check the printed meter serial carefully.":"";ocrConfidence.textContent=(source||"Photo")+" text confidence "+ocrSuggestions.confidence+"%. These are suggestions; confirm them against the meter and job."+(ocrSuggestions.confidence<45?" Low OCR confidence: verify each suggestion; fields without a clear match are left blank.":"")+extra;model.value=[ocrSuggestions.make,ocrSuggestions.model].filter(Boolean).join(" ")||"Unable to confirm exact model";if(ocrSuggestions.serial)serial.value=ocrSuggestions.serial;if(ocrSuggestions.year)document.getElementById("year").value=ocrSuggestions.year;if(ocrSuggestions.index){reading.value=ocrSuggestions.index;readDisplay.textContent=ocrSuggestions.index}if(ocrSuggestions.digits>=4&&ocrSuggestions.digits<=8)digits.value=String(ocrSuggestions.digits)}
 async function makeOcrPhotoVariants(file){
   const bitmap=await createImageBitmap(file),w=bitmap.width,h=bitmap.height,variants=[];
-  const regions=[[.04,.16,.92,.70],[.02,.24,.68,.56],[.30,.24,.68,.56]];
+  const regions=[[.04,.16,.92,.70],[.02,.24,.68,.56],[.30,.24,.68,.56],[.18,.45,.38,.17,4],[.08,.36,.72,.34,2.5]];
   try{for(const r of regions){const sx=Math.round(w*r[0]),sy=Math.round(h*r[1]),sw=Math.min(w-sx,Math.round(w*r[2])),sh=Math.min(h-sy,Math.round(h*r[3]));
-    if(sw<80||sh<80)continue;const scale=Math.min(2,Math.max(1,1500/Math.max(sw,sh))),canvas=document.createElement("canvas");
+    if(sw<80||sh<80)continue;const scale=Math.min(r[4]||2,Math.max(1,1500/Math.max(sw,sh))),canvas=document.createElement("canvas");
     canvas.width=Math.round(sw*scale);canvas.height=Math.round(sh*scale);const ctx=canvas.getContext("2d",{willReadFrequently:true});
     ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.drawImage(bitmap,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.92));if(blob)variants.push(blob)
